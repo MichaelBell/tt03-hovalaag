@@ -10,7 +10,8 @@ module tb (
     // testbench is controlled by test.py
     input clk,
     input rst,
-    output [6:0] segments
+    input [5:0] data_in,
+    output [7:0] data_out
    );
 
     // this part dumps the trace to a vcd file that can be viewed with GTKWave
@@ -21,12 +22,12 @@ module tb (
     end
 
     // wire up the inputs and outputs
-    wire [7:0] inputs = {6'b0, rst, clk};
+    wire [7:0] inputs = {data_in[5:0], rst, clk};
     wire [7:0] outputs;
-    assign segments = outputs[6:0];
+    assign data_out = outputs;
 
     // instantiate the DUT
-    seven_segment_seconds seven_segment_seconds(
+    MichaelBell_hovalaag uut(
         .io_in  (inputs),
         .io_out (outputs)
         );

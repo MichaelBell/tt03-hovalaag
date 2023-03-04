@@ -14,21 +14,21 @@ module MichaelBell_hovalaag (
     wire clk;
     wire reset;
 
-    reg addr[9:0];
+    reg [9:0] addr;
 
-    assign clk = in[0];
-    assign reset = in[1] & in[2];
+    assign clk = io_in[0];
+    assign reset = io_in[1] && io_in[2];
 
     HovalaagWrapper wrapper (
-        clk(clk),
-        reset(reset),
-        addr(addr),
-        in(io_in[7:2]),
-        out(io_out[7:0])
+        .clk(clk),
+        .reset(reset),
+        .addr(addr),
+        .io_in(io_in[7:2]),
+        .io_out(io_out[7:0])
     );
 
-    always @(posedge clk) begin
-        if (in[1] && (in[2] ||S in[3])) begin
+    always @(negedge clk) begin
+        if (io_in[1] && (io_in[2] || io_in[3])) begin
             addr <= 1;
         end
         else begin
