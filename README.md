@@ -1,5 +1,12 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg)
 
+# HOVALAAG CPU for Tiny Tapeout.  Maybe.
+
+HOVALAAG is an assembler programming game.
+[HovalaagCPU](https://github.com/MichaelBell/HovalaagCPU) is a Verilog implementation of the CPU from the game
+
+Can we make the CPU a physical reality?
+
 # What is Tiny Tapeout?
 
 TinyTapeout is an educational project that aims to make it easier and cheaper than ever to get your digital designs manufactured on a real chip!
