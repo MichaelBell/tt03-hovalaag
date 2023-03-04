@@ -29,7 +29,7 @@ module MichaelBell_hovalaag (
 
     always @(negedge clk) begin
         if (io_in[1] && (io_in[2] || io_in[3])) begin
-            addr <= 1;
+            addr <= 10'b1000000000;
         end
         else begin
             addr <= { addr[8:0], addr[9] };

@@ -36,7 +36,7 @@ module HovalaagWrapper(
     wire [11:0] c_dbg;
     wire [11:0] d_dbg;
 
-    assign cpu_clk = addr[5] && clk;
+    assign cpu_clk = (reset || addr[5]) && clk;
 
     Hovalaag hov (
         .clk(cpu_clk),
