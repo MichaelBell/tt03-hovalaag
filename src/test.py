@@ -2,21 +2,95 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ClockCycles
 
+class HovaTest:
+    def __init__(self, dut):
+        self.dut = dut
+        self.in1 = 0
+        self.in2 = 0
+        self.pc = 0
+        self.out1 = 0
+        self.out2 = 0
+        self.dbg = [0]*5
+
+    async def start_and_reset(self):
+        self.dut._log.info("start")
+        self.clock = Clock(self.dut.clk, 10, units="us")
+        cocotb.start_soon(self.clock.start())
+
+        self.dut._log.info("reset")
+        self.dut.rst.value = 1
+        self.dut.data_in.value = 1
+        await ClockCycles(self.dut.clk, 2)
+        self.dut.rst.value = 0
+        self.dut.data_in.value = 0
+
+    async def execute_instr(self, instr):
+        for i in range(5):
+            self.dut.data_in.value = instr & 0x3F
+            await ClockCycles(self.dut.clk, 1)
+            self.dbg[i] = self.dut.data_out.value
+            instr >>= 6
+        
+        self.dut.data_in.value = instr & 0x3
+        await ClockCycles(self.dut.clk, 1)
+        if (self.dut.data_out.value & 0x1) != 0: self.in1 = 0
+        if (self.dut.data_out.value & 0x2) != 0: self.in2 = 0
+        out1_valid = (self.dut.data_out.value & 0x4) != 0
+        out2_valid = (self.dut.data_out.value & 0x8) != 0
+
+        self.dut.data_in.value = self.in1 & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        self.pc = self.dut.data_out.value
+        
+        self.dut.data_in.value = (self.in1 >> 6) & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        new_out = self.dut.data_out.value
+
+        self.dut.data_in.value = self.in2 & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        new_out = new_out | ((self.dut.data_out.value & 0xF) << 8)
+        new_out = (new_out ^ 0x800) - 0x800 # Sign extend
+
+        self.dut.data_in.value = (self.in1 >> 6) & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+
+        if out1_valid:
+            self.out1 = new_out
+        elif out2_valid:
+            self.out2 = new_out
+
+    async def load_val_to_a(self, val):
+        self.dut._log.debug("A <= {}".format(val))
+
+        self.in1 = val
+
+        #await self.execute_instr(0o10203040506)
+
+        #                          ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await self.execute_instr(0b0000_00_00_00_0_00_00_00_0_0_0_000000_000000)
+        await self.execute_instr(0b0000_11_00_00_0_00_00_00_0_0_0_000000_000000)
+
+    async def load_val_to_b(self, val):
+        self.dut._log.debug("B <= {}".format(val))
+
+        #                          ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await self.execute_instr(0b0000_00_11_00_0_00_00_00_0_0_1_000000_000000 + val)
+
+    async def load_val_to_c(self, val):
+        self.dut._log.debug("C <= {}".format(val))
+
+        await self.load_val_to_b(val)
+
+        #                          ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await self.execute_instr(0b0010_00_00_01_0_00_00_00_0_0_0_000000_000000)
 
 @cocotb.test()
 async def test_reset(dut):
-    dut._log.info("start")
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
-
-    dut._log.info("reset")
-    dut.rst.value = 1
-    dut.data_in.value = 1
-    await ClockCycles(dut.clk, 2)
-    dut.rst.value = 0
-    dut.data_in.value = 0
+    hov = HovaTest(dut)
+    await hov.start_and_reset()
 
     # Emulate a program with instruction memory all set to 0 (NOP)
+    dut._log.info("check PC")
     for i in range(1, 512):
         new_pc = i % 256
 
@@ -35,6 +109,7 @@ async def test_reset(dut):
             assert int(dut.data_out.value) == 0
 
     # Should be able to reset instruction read at any point
+    dut._log.info("check addr reset")
     new_pc = 0
     for i in range(1, 10):
         await ClockCycles(dut.clk, i)
@@ -54,3 +129,110 @@ async def test_reset(dut):
         await ClockCycles(dut.clk, 3)
         new_pc += 1
 
+@cocotb.test()
+async def test_alu(dut):
+    hov = HovaTest(dut)
+    await hov.start_and_reset()
+
+    async def test_alu_op(hov, alu_op, a, b, expected_result):
+        await hov.load_val_to_a(a)
+        await hov.load_val_to_b(b)
+        #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await hov.execute_instr(0b0000_00_00_00_0_01_10_00_0_0_0_000000_000000 + (alu_op << 28))  # W=ALU
+        await hov.execute_instr(0b0101_00_00_00_0_00_00_00_1_0_0_000000_000000)  # OUT1=W
+        assert hov.out1 == expected_result
+
+    await test_alu_op(hov, 0b0000, 7, 35, 0)   # Zero
+    await test_alu_op(hov, 0b0001, 7, 35, -7)  # -A
+    await test_alu_op(hov, 0b0010, 7, 35, 35)  # B
+
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0010_00_00_10_0_00_00_00_0_0_0_000000_000000)  # DEC
+    await test_alu_op(hov, 0b0011, 7, 35, -1)  # C
+
+    await hov.load_val_to_c(23)
+    await test_alu_op(hov, 0b0011, 7, 35, 23)  # C
+
+    await test_alu_op(hov, 0b0100, 7, 35, 3)   # A>>1
+    await test_alu_op(hov, 0b0101, 7, 35, 42)  # A+B
+    await test_alu_op(hov, 0b0110, 7, 35, 28)  # B-A
+    await test_alu_op(hov, 0b0111, 7, 35, 42)  # A+B+F
+    await test_alu_op(hov, 0b1000, 7, 35, 28)  # B-A-F
+
+    await test_alu_op(hov, 0b0110, 35, 7, -28)  # B-A
+    await test_alu_op(hov, 0b0111, 7, 35, 43)  # A+B+F
+    await test_alu_op(hov, 0b0110, 35, 7, -28)  # B-A
+    await test_alu_op(hov, 0b1000, 7, 35, 27)  # B-A-F
+
+    await test_alu_op(hov, 0b1001, 7, 35, 7|35)  # A|B
+    await test_alu_op(hov, 0b1010, 7, 35, 7&35)  # A&B
+    await test_alu_op(hov, 0b1011, 7, 35, 7^35)  # A^B
+    await test_alu_op(hov, 0b1100, 7, 35, ~7)  # ~A
+    await test_alu_op(hov, 0b1101, 7, 35, 7)  # A
+    await test_alu_op(hov, 0b1110, 8, 35, 8)  # A
+    await test_alu_op(hov, 0b1111, 9, 35, 9)  # A
+
+@cocotb.test()
+async def test_branch(dut):
+    hov = HovaTest(dut)
+    await hov.start_and_reset()
+
+    # Unconditional branch
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----    
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_01_0_0_0_000000_001000)  # JMP 8
+    assert hov.pc.value == 8
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_01_0_0_1_000011_111111)  # JMP 255
+    assert hov.pc.value == 255
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_00_0_0_0_000000_000000)  # NOP
+    assert hov.pc.value == 0
+
+    # Decrement C and take a conditional branch using JMPT
+    await hov.load_val_to_c(4)
+    pc_start = hov.pc.value
+
+    # Executes 5 times without branching because C must decrement to 0 (4 loops), 
+    # then F is set true the next time
+    for i in range(1, 6):
+        #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await hov.execute_instr(0b0011_00_00_10_0_00_01_10_0_0_0_000000_000000)  # DEC,F=ZERO(C),JMPT 0
+        assert hov.pc.value == pc_start + i
+
+    # Finaly the JMP is taken on the 6th time
+    await hov.execute_instr(0b0011_00_00_10_0_00_01_10_0_0_0_000000_000000)  # DEC,F=ZERO(C),JMPT 0
+    assert hov.pc.value == 0
+
+    # Decrement C and take a conditional branch using DECNZ
+    await hov.load_val_to_c(4)
+
+    # Loops 3 times, then increments PC
+    # then F is set true the next time
+    for i in range(3):
+        #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+        await hov.execute_instr(0b0000_00_00_11_0_00_00_00_0_0_0_000000_010000)  # DECNZ 16
+        assert hov.pc.value == 16
+
+    # The DECNZ exits on the 4th time, so PC increments normally
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_00_00_11_0_00_00_00_0_0_0_000000_010000)  # DECNZ 16
+    assert hov.pc.value == 17
+
+    await hov.load_val_to_c(1)
+    # The DECNZ will not take the branch, but the JMP will
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_00_00_11_0_00_10_01_0_0_0_000000_010000)  # DECNZ,JMP 16
+    assert hov.pc.value == 16
+
+    await hov.load_val_to_c(2)
+    # The DECNZ will take the branch, the JMPT won't matter
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_00_00_00_0_00_10_00_0_0_0_000000_000000)  # F=NEG(0)
+    await hov.execute_instr(0b0000_00_00_11_0_00_00_10_0_0_0_000000_010000)  # DECNZ,JMPT 16
+    assert hov.pc.value == 16
+
+    # Set FLAG and don't JMPF
+    await hov.execute_instr(0b0000_00_00_00_0_00_01_00_0_0_0_000000_000000)  # F=ZERO(0)
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_11_0_0_0_000000_000000)  # JMPF 0
+    assert hov.pc.value == 18
+    # Do jump true
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_10_0_0_0_000000_000000)  # JMPT 0
+    assert hov.pc.value == 0

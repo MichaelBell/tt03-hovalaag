@@ -45,8 +45,6 @@ module HovalaagWrapper(
         .IN2(in2),
         .IN2_adv(in2_adv),
         .OUT(out),
-        .OUT_valid(out_valid),
-        .OUT_select(out_select),
         .instr({io_in[1:0], instr[29:0]}),
         .PC_out(pc),
         .rst(reset),
@@ -56,6 +54,11 @@ module HovalaagWrapper(
         .C_dbg(c_dbg),
         .D_dbg(d_dbg)
     );
+
+    // We want to use out valid and select before the result is clocked out,
+    // so decode them directly here
+    assign out_valid = instr[14];
+    assign out_select = instr[13];
 
     always @(posedge clk) begin
         if (reset) begin
@@ -70,7 +73,6 @@ module HovalaagWrapper(
             10'b0000000100: instr[17:12] <= io_in;
             10'b0000001000: instr[23:18] <= io_in;
             10'b0000010000: instr[29:24] <= io_in;
-            10'b0000010000: ;
             10'b0001000000: in1[ 5: 0] <= io_in;
             10'b0010000000: in1[11: 6] <= io_in;
             10'b0100000000: in2[ 5: 0] <= io_in;
