@@ -9,4 +9,5 @@ src/results.xml
 src/user_config.tcl
 tt
 gds_render.*
+datasheet.*
 *.gtkw

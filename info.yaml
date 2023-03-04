@@ -22,36 +22,46 @@ documentation:
   author:       "Mike Bell"
   title:        "Hovalaag CPU"
   language:     "Verilog"
-  description:  "Implementation of the CPU from the HOVALAAG game."
+  description:  "Implementation of the CPU from HOVALAAG"
 
 # Longer description of how the project works. You can use standard markdown format.
   how_it_works: |
-      TODO
+      [HOVALAAG](http://silverspaceship.com/hovalaag/) (Hand-Optimizing VLIW Assembly Language as a Game) is a free Zachlike game.
+
+      This is an implementation of the VLIW processor from the game.  Thank you to @[nothings](https://twitter.com/nothings) for the fun game,
+      making the assembler public domain, and for permission to create this hardware implementation.
+
+      The processor uses 32-bit instructions and has 12-bit I/O.  The instruction and data are therefore passed in and out over 10 clocks per
+      processor clock.
+
+      More details in the [github repo](https://github.com/MichaelBell/tt03-hovalaag).
 
 # Instructions on how someone could test your project, include things like what buttons do what and how to set the clock if needed
   how_to_test:  |
-      TODO
+      The [assembler](http://silverspaceship.com/hovalaag/assembler.zip) can be downloaded to generate programs.
+
+      The subcycle counter can be reset independently of the rest of the processor, to ensure you can get to a known state without clearing all registers.
 
 # A description of what the inputs do
   inputs:               
-    - clock
-    - reset
-    - none
-    - none
-    - none
-    - none
-    - none
-    - none
+    - Clock
+    - Reset enable
+    - Input 0 or Reset
+    - Input 1 or Reset subcycle count
+    - Input 2
+    - Input 3
+    - Input 4
+    - Input 5
 # A description of what the outputs do
   outputs:
-    - segment a
-    - segment b
-    - segment c
-    - segment d
-    - segment e
-    - segment f
-    - segment g
-    - dot
+    - Output 0
+    - Output 1
+    - Output 2
+    - Output 3
+    - Output 4
+    - Output 5
+    - Output 6
+    - Output 7
 
 # The following fields are optional
   tag:          "microprocessor"      # comma separated list of tags: test encryption, experiment, clock, animation, utility, industrial, pwm, fpga, alu, microprocessor, risc, riscv, sensor, signal generator, fft, filter, music, bcd, sound, serial, timer, random number generator, calculator, decoder, counter, puzzle, multiplier, game, oscillator,

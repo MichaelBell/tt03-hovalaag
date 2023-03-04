@@ -1,11 +1,41 @@
 ![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg)
 
-# HOVALAAG CPU for Tiny Tapeout.  Maybe.
+# HOVALAAG CPU for Tiny Tapeout
 
-HOVALAAG is an assembler programming game.
-[HovalaagCPU](https://github.com/MichaelBell/HovalaagCPU) is a Verilog implementation of the CPU from the game
+[HOVALAAG](http://silverspaceship.com/hovalaag/) (Hand-Optimizing VLIW Assembly Language as a Game) is a free Zachlike game.
 
-Can we make the CPU a physical reality?
+[HovalaagCPU](https://github.com/MichaelBell/HovalaagCPU) is my Verilog implementation of the CPU from the game. This is a project to implement it on Tiny Tapeout.
+
+Thank you to @[nothings](https://twitter.com/nothings) for the fun game, making the assembler public domain, and for permission to create this hardware implementation.
+
+# Implementation details
+
+The processor is described in detail on the game pages.  Here we will document the wrapper to allow it to be used through Tiny Tapeout.
+
+The processor uses 32-bit instructions and has 12-bit I/O.  Tiny Tapeout effectively has 6 bits input and 8 bits output per clock (because 2 input bits are required for clock and reset).
+
+The instruction and data therefore need to be passed in and out over several (currently 10) clocks per processor clock.  The cycle is as follows:
+
+| Clock | Input 7-2 | Output |
+| ----- | ----- | ------ |
+| 0     | Instruction 5-0 | Register A for debug |
+| 1     | Instruction 11-6 | Register B for debug |
+| 2     | Instruction 17-12 | Register C for debug |
+| 3     | Instruction 23-18 | Register D for debug |
+| 4     | Instruction 29-24 | Register W for debug |
+| 5     | Instruction 31-30 | IO update indication |
+| 6     | New IN1 5-0       | New PC |
+| 7     | New IN1 11-6      | OUT 7-0 |
+| 8     | New IN2 5-0       | OUT 11-8 |
+| 9     | New IN2 11-6      | |
+
+The IO update indication bits on the 6th clock are as follows:
+| Bit | Meaning |
+| --- | ------- |
+| 0   | Advance IN1 |
+| 1   | Advance IN2 |
+| 2   | Write OUT to OUT1 |
+| 3   | Write OUT to OUT2 |
 
 # What is Tiny Tapeout?
 
