@@ -28,6 +28,11 @@ module tb (
 
     // instantiate the DUT
     MichaelBell_hovalaag uut(
+`ifdef GL_TEST
+        // for gatelevel testing we need to set up the power pins
+        .vccd1(1'b1),
+        .vssd1(1'b0),
+`endif
         .io_in  (inputs),
         .io_out (outputs)
         );

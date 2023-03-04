@@ -5,8 +5,25 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 
+ifneq ($(GATES),yes)
+# normal simulation
 VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/hovalaag_wrapper.v $(PWD)/hovalaag_tiny_tapeout.v $(PWD)/HovalaagCPU/Hovalaag.v
 COMPILE_ARGS += -I$(PWD)/HovalaagCPU
+else
+# copy the gatelevel verilog from /runs/wokwi/results/final/verilog/gl/ and commit to this directory
+GATE_SOURCES := $(filter-out $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.nl.v), $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.v))
+VERILOG_SOURCES := $(PWD)/tb.v $(GATE_SOURCES)
+
+# gate level simulation requires some extra setup
+COMPILE_ARGS    += -DGL_TEST
+COMPILE_ARGS    += -DFUNCTIONAL
+COMPILE_ARGS    += -DUSE_POWER_PINS
+COMPILE_ARGS    += -DSIM
+COMPILE_ARGS    += -DUNIT_DELAY=#1
+COMPILE_ARGS    += -DSIM
+VERILOG_SOURCES += $(PDK_ROOT)/sky130B/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
+VERILOG_SOURCES += $(PDK_ROOT)/sky130B/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
+endif
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file
 TOPLEVEL = tb
