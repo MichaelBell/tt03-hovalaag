@@ -37,6 +37,18 @@ The IO update indication bits on the 6th clock are as follows:
 | 2   | Write OUT to OUT1 |
 | 3   | Write OUT to OUT2 |
 
+## TODO
+
+Changes to the design, ideally before submission:
+- More test cases
+- Make Output 9 bottom 4 bits of OUT formatted for 7 segment
+- Option to format debug for 7 segment (set option using another IO when reset\_en high)
+- Add a simple ring oscillator and make the unused ALU OPs read a counter driven by it (low bits are effectively random, high bits would be interesting to understand the rate of it)
+
+Making the hardware usable:
+- Easy way to assemble a vasm program and build the output plus some data into a firmware for Pico
+- Firmware for Pico to communicate with the PCB.  Ideally could be generally useful for any design.
+
 # What is Tiny Tapeout?
 
 TinyTapeout is an educational project that aims to make it easier and cheaper than ever to get your digital designs manufactured on a real chip!
