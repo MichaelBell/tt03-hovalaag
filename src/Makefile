@@ -7,7 +7,7 @@ TOPLEVEL_LANG ?= verilog
 
 ifneq ($(GATES),yes)
 # normal simulation
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/hovalaag_wrapper.v $(PWD)/hovalaag_tiny_tapeout.v $(PWD)/HovalaagCPU/Hovalaag.v
+VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/hovalaag_wrapper.v $(PWD)/hovalaag_tiny_tapeout.v $(PWD)/decoder.v $(PWD)/HovalaagCPU/Hovalaag.v
 COMPILE_ARGS += -I$(PWD)/HovalaagCPU
 else
 # copy the gatelevel verilog from /runs/wokwi/results/final/verilog/gl/ and commit to this directory

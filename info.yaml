@@ -9,6 +9,7 @@ project:
     - hovalaag_tiny_tapeout.v
     - hovalaag_wrapper.v
     - HovalaagCPU/Hovalaag.v
+    - decoder.v
   top_module:  "MichaelBell_hovalaag"      # put the name of your top module here, make it unique by prepending your github username
 
 # Keep a track of the submission yaml

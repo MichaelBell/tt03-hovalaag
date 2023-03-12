@@ -106,9 +106,11 @@ async def test_reset(dut):
         assert int(dut.data_out.value) == new_pc
 
         # OUT are all 0.
-        for j in range(3):
+        for j in range(2):
             await ClockCycles(dut.clk, 1)
             assert int(dut.data_out.value) == 0
+        await ClockCycles(dut.clk, 1)
+        assert int(dut.data_out.value) == 0b00111111
 
     # Should be able to reset instruction read at any point
     dut._log.info("check addr reset")

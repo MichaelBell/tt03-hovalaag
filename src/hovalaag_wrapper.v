@@ -15,7 +15,8 @@ module HovalaagWrapper(
                       // Output: 0-4: Low 8 bits of registers A-D, W for debugging
                       //           5: Execute status: 0: IN1 advance, 1: IN2 advance, 2: OUT1 valid, 3: OUT2 valid
                       //           6: New PC
-                      //         7-9: OUT bits 0-7, 8-11, 0-7 (valid for OUT1 or OUT2 if one of the valid bits was set)
+                      //         7-8: OUT bits 0-7, 8-11 (valid for OUT1 or OUT2 if one of the valid bits was set)
+                      //           9: OUT bits 0-3, 11 in 7-segment format (11 sets the 8th output)
     input [5:0] io_in,
     output [7:0] io_out
 );
@@ -36,6 +37,8 @@ module HovalaagWrapper(
     wire [11:0] c_dbg;
     wire [11:0] d_dbg;
 
+    wire [6:0] seg7_out;
+
     assign cpu_clk = (reset || addr[5]) && clk;
 
     Hovalaag hov (
@@ -53,6 +56,11 @@ module HovalaagWrapper(
         .B_dbg(b_dbg),
         .C_dbg(c_dbg),
         .D_dbg(d_dbg)
+    );
+
+    Seg7 seg7 (
+        .counter(out[3:0]),
+        .segments(seg7_out)
     );
 
     // We want to use out valid and select before the result is clocked out,
@@ -98,7 +106,7 @@ module HovalaagWrapper(
         10'b0001000000: get_out = pc;
         10'b0010000000: get_out = out[ 7: 0];
         10'b0100000000: get_out = { 4'b0000, out[11: 8] };
-        10'b1000000000: get_out = out[ 7: 0];
+        10'b1000000000: get_out = { out[11], seg7_out };
         endcase
     endfunction
 
