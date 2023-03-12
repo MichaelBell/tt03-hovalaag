@@ -1,3 +1,5 @@
+import random
+
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, Timer, ClockCycles
@@ -51,7 +53,7 @@ class HovaTest:
         new_out = new_out | ((self.dut.data_out.value & 0xF) << 8)
         new_out = (new_out ^ 0x800) - 0x800 # Sign extend
 
-        self.dut.data_in.value = (self.in1 >> 6) & 0x3F
+        self.dut.data_in.value = (self.in2 >> 6) & 0x3F
         await ClockCycles(self.dut.clk, 1)
 
         if out1_valid:
@@ -236,3 +238,142 @@ async def test_branch(dut):
     # Do jump true
     await hov.execute_instr(0b0000_00_00_00_0_00_00_10_0_0_0_000000_000000)  # JMPT 0
     assert hov.pc.value == 0
+
+@cocotb.test()
+async def test_io(dut):
+    hov = HovaTest(dut)
+    await hov.start_and_reset()
+
+    # NOP to prime the inputs
+    hov.in1 = 23
+    hov.in2 = 42
+    await hov.execute_instr(0)
+
+    # Load IN1
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_11_00_00_0_00_00_00_0_0_0_000000_000000)
+
+    # D=A, A=IN2, W=-5
+    await hov.execute_instr(0b0000_11_00_00_1_11_00_00_0_1_0_111011_000000)
+    assert hov.out1 == 0
+    assert hov.out2 == 0
+
+    # W=A, OUT1=W, A=D
+    await hov.execute_instr(0b0000_10_00_00_0_10_00_00_1_0_0_000000_000000)
+    assert hov.out1 == -5
+    assert hov.out2 == 0
+
+    # W=A, OUT2=W
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_00_00_00_0_10_00_00_1_1_0_000000_000000)
+    assert hov.out2 == 42
+    assert hov.out1 == -5
+
+    # OUT1=W,W=-A
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0001_00_00_00_0_01_00_00_1_0_0_000000_000000)
+    print(hov.out1, hov.out2)
+    assert hov.out2 == 42
+    assert hov.out1 == 23
+
+    # OUT2=W
+    #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
+    await hov.execute_instr(0b0000_00_00_00_0_00_00_00_1_1_0_000000_000000)
+    assert hov.out2 == -23
+    assert hov.out1 == 23
+
+class HovaRunProgram:
+    def __init__(self, dut, prog, in1, in2=None):
+        self.dut = dut
+        self.prog = prog
+        self.in1 = in1.copy()
+        self.in2 = in2.copy() if in2 is not None else []
+        self.pc = 0
+        self.out1 = []
+        self.out2 = [] if in2 is not None else self.in2
+        self.dbg = [0]*5
+
+    async def start_and_reset(self):
+        self.dut._log.info("start")
+        self.clock = Clock(self.dut.clk, 10, units="us")
+        cocotb.start_soon(self.clock.start())
+
+        self.dut._log.info("reset")
+        self.dut.rst.value = 1
+        self.dut.data_in.value = 1
+        await ClockCycles(self.dut.clk, 2)
+        self.dut.rst.value = 0
+        self.dut.data_in.value = 0
+
+    async def execute_one(self):
+        instr = self.prog[self.pc]
+        await self.execute_instr(instr)
+
+    async def execute_instr(self, instr):
+        for i in range(5):
+            self.dut.data_in.value = instr & 0x3F
+            await ClockCycles(self.dut.clk, 1)
+            self.dbg[i] = self.dut.data_out.value
+            instr >>= 6
+
+        self.dut.data_in.value = instr & 0x3
+        await ClockCycles(self.dut.clk, 1)
+        if (self.dut.data_out.value & 0x1) != 0: self.in1 = self.in1[1:]
+        if (self.dut.data_out.value & 0x2) != 0: self.in2 = self.in2[1:]
+        out1_valid = (self.dut.data_out.value & 0x4) != 0
+        out2_valid = (self.dut.data_out.value & 0x8) != 0
+
+        in1 = 0 if len(self.in1) == 0 else self.in1[0]
+        in2 = 0 if len(self.in2) == 0 else self.in2[0]
+        self.dut.data_in.value = in1 & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        self.pc = self.dut.data_out.value
+
+        self.dut.data_in.value = (in1 >> 6) & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        new_out = self.dut.data_out.value
+
+        self.dut.data_in.value = in2 & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+        new_out = new_out | ((self.dut.data_out.value & 0xF) << 8)
+        new_out = (new_out ^ 0x800) - 0x800 # Sign extend
+
+        self.dut.data_in.value = (in2 >> 6) & 0x3F
+        await ClockCycles(self.dut.clk, 1)
+
+        if out1_valid:
+            self.out1.append(new_out)
+        elif out2_valid:
+            self.out2.append(new_out)
+
+    async def execute_until_out1_len(self, expected_len):
+
+        # JMP 0 to prime the inputs
+        await self.execute_instr(0b0000_00_00_00_0_00_00_01_0_0_0_000000_000000)
+
+        while len(self.out1) < expected_len:
+            await self.execute_one()
+
+@cocotb.test()
+async def test_example_loop1(dut):
+    #     ALU- A- B- C- D W- F- PC O I X K----- L-----
+    prog = [
+        0b0000_11_00_00_0_00_00_00_0_0_0_000000_000000,  # A=IN1
+        0b0000_00_10_00_0_00_00_00_0_0_0_000000_000000,  # B=A
+        0b0101_01_01_00_0_00_00_00_0_0_0_000000_000000,  # A=B=A+B
+        0b0101_01_01_00_0_00_00_00_0_0_0_000000_000000,  # A=B=A+B
+        0b0101_00_00_00_0_01_00_00_0_0_0_000000_000000,  # W=A+B
+        0b0000_00_00_00_0_00_00_00_1_0_0_000000_000000,  # OUT1=W
+        0b0000_00_00_00_0_00_00_01_0_0_0_000000_000000,  # JMP 0
+    ]
+
+    NUM_VALUES = 10
+    in1 = [random.randint(-2048 // 8,2047 // 8) for x in range(NUM_VALUES)]
+
+    hov = HovaRunProgram(dut, prog, in1)
+    await hov.start_and_reset()
+
+    await hov.execute_until_out1_len(NUM_VALUES)
+
+    for i in range(NUM_VALUES):
+        assert hov.out1[i] == in1[i] * 8
