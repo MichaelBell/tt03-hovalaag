@@ -221,8 +221,7 @@ jobs:
       run: |
         cd src
         make clean
-        # GATES=yes make  # Temporarily disable as it will infinite loop
-        echo failure > results.xml
+        GATES=yes make
         # make will return success even if the test fails, so check for failure in the results.xml
         ! grep failure results.xml
 

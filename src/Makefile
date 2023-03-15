@@ -12,8 +12,7 @@ COMPILE_ARGS += -I$(PWD)/HovalaagCPU
 COMPILE_ARGS    += -DSIM
 else
 # copy the gatelevel verilog from /runs/wokwi/results/final/verilog/gl/ and commit to this directory
-GATE_SOURCES := $(filter-out $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.nl.v), $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.v))
-VERILOG_SOURCES := $(PWD)/tb.v $(GATE_SOURCES)
+VERILOG_SOURCES := $(PWD)/tb.v gate_level_netlist.v inv_with_delay.v
 
 # gate level simulation requires some extra setup
 COMPILE_ARGS    += -DGL_TEST
@@ -34,3 +33,10 @@ MODULE = test
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
+gate_level_netlist.v: ../runs/wokwi/results/final/verilog/gl/*.v
+	rm -f ../runs/wokwi/results/final/verilog/gl/*.nl.v
+	cp ../runs/wokwi/results/final/verilog/gl/*.v gate_level_netlist.v
+	sed -i '/sky130_fd_sc_hd__inv_1 \\wrapper.rosc.inv/s/sky130_fd_sc_hd__inv_1/inv_with_delay/' gate_level_netlist.v
+
+clean::
+	rm -f gate_level_netlist.v
