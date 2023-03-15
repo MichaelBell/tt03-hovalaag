@@ -12,7 +12,7 @@ jobs:
         OPENLANE_IMAGE_NAME:    efabless/openlane:4cd0986b3ae550cdf7a6d0fba4e0657012f635d8-amd64
         OPENLANE_ROOT:          /home/runner/openlane
         PDK_ROOT:               /home/runner/pdk
-        PDK:                    sky130B
+        PDK:                    sky130A
 
     # ubuntu
     runs-on: ubuntu-latest
@@ -180,7 +180,7 @@ jobs:
         OPENLANE_IMAGE_NAME:    efabless/openlane:4cd0986b3ae550cdf7a6d0fba4e0657012f635d8-amd64
         OPENLANE_ROOT:          /home/runner/openlane
         PDK_ROOT:               /home/runner/pdk
-        PDK:                    sky130B
+        PDK:                    sky130A
 
     # ubuntu
     runs-on: ubuntu-latest
@@ -221,7 +221,8 @@ jobs:
       run: |
         cd src
         make clean
-        GATES=yes make
+        # GATES=yes make  # Temporarily disable as it will infinite loop
+        echo failure > results.xml
         # make will return success even if the test fails, so check for failure in the results.xml
         ! grep failure results.xml
 
@@ -230,7 +231,9 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
           name: gatelevel-test-vcd
-          path: src/tb.vcd
+          path: |
+            src/tb.vcd
+            src/results.xml
 
 ##############################################################
 # Publish to pages to get a nicely formatted result

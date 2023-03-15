@@ -1,3 +1,18 @@
+/* Copyright (C) 2023 Michael Bell
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 /*
    Wrapper for the Hovalaag CPU.  This provides registers for the data coming in
    over the 6-bit in to populate, and exposes the outputs for the 8-bit output bus
@@ -20,6 +35,8 @@ module HovalaagWrapper(
     input [5:0] io_in,
     output [7:0] io_out
 );
+    parameter RNG_WIDTH = 6;
+
     reg [29:0] instr;
     reg [11:0] in1;
     reg [11:0] in2;
@@ -31,6 +48,9 @@ module HovalaagWrapper(
     wire out_valid;
     wire out_select;
     wire [7:0] pc;
+
+    wire [RNG_WIDTH-1:0] fast_count;
+    reg [RNG_WIDTH-1:0] buffered_fast_count;
 
     wire [11:0] a_dbg;
     wire [11:0] b_dbg;
@@ -51,6 +71,8 @@ module HovalaagWrapper(
         .instr({io_in[1:0], instr[29:0]}),
         .PC_out(pc),
         .rst(reset),
+        .alu_op_14_source({{(12-RNG_WIDTH){1'b0}}, buffered_fast_count}),
+        .alu_op_15_source(12'h001),
 
         .A_dbg(a_dbg),
         .B_dbg(b_dbg),
@@ -62,6 +84,14 @@ module HovalaagWrapper(
         .counter(out[3:0]),
         .segments(seg7_out)
     );
+
+    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH)) rosc (
+        .clk(clk),
+        .reset(reset),
+        .fast_count(fast_count)
+    );
+
+    always @(posedge clk) buffered_fast_count <= fast_count;
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here

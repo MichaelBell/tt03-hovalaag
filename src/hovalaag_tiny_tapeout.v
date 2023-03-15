@@ -1,3 +1,18 @@
+/* Copyright (C) 2023 Michael Bell
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 /* Top module for the Hovalaag Tiny Tapeout
  *
  * IN: 0: CLK
@@ -12,6 +27,20 @@ module MichaelBell_hovalaag (
   output [7:0] io_out
 );
     wire clk;
+    wire [7:2] io_in_b;
+
+`ifdef SIM
+    assign #30 io_in_b[7:2] = io_in[7:2];
+`else
+    // Delay the main inputs to help with hold time violations
+    genvar i;
+    generate
+        for (i = 2; i <= 7; i = i + 1) begin
+            sky130_fd_sc_hd__dlymetal6s6s_1 dly1(.X(io_in_b[i]), .A(io_in[i]));
+        end
+    endgenerate
+`endif
+
     wire reset;
 
     reg [9:0] addr;
@@ -23,7 +52,7 @@ module MichaelBell_hovalaag (
         .clk(clk),
         .reset(reset),
         .addr(addr),
-        .io_in(io_in[7:2]),
+        .io_in(io_in_b[7:2]),
         .io_out(io_out[7:0])
     );
 

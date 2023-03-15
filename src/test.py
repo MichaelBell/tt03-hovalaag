@@ -1,3 +1,17 @@
+# Copyright (C) 2023 Michael Bell
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import random
 
 import cocotb
@@ -22,7 +36,7 @@ class HovaTest:
         self.dut._log.info("reset")
         self.dut.rst.value = 1
         self.dut.data_in.value = 1
-        await ClockCycles(self.dut.clk, 2)
+        await ClockCycles(self.dut.clk, 10)
         self.dut.rst.value = 0
         self.dut.data_in.value = 0
 
@@ -143,7 +157,7 @@ async def test_alu(dut):
         await hov.load_val_to_b(b)
         #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
         await hov.execute_instr(0b0000_00_00_00_0_01_10_00_0_0_0_000000_000000 + (alu_op << 28))  # W=ALU
-        await hov.execute_instr(0b0101_00_00_00_0_00_00_00_1_0_0_000000_000000)  # OUT1=W
+        await hov.execute_instr(0b0000_00_00_00_0_00_00_00_1_0_0_000000_000000)  # OUT1=W
         assert hov.out1 == expected_result
 
     await test_alu_op(hov, 0b0000, 7, 35, 0)   # Zero
@@ -173,8 +187,15 @@ async def test_alu(dut):
     await test_alu_op(hov, 0b1011, 7, 35, 7^35)  # A^B
     await test_alu_op(hov, 0b1100, 7, 35, ~7)  # ~A
     await test_alu_op(hov, 0b1101, 7, 35, 7)  # A
-    await test_alu_op(hov, 0b1110, 8, 35, 8)  # A
-    await test_alu_op(hov, 0b1111, 9, 35, 9)  # A
+    # await test_alu_op(hov, 0b1110, 8, 35, 8)  # Random number
+    await test_alu_op(hov, 0b1111, 9, 42, 1)  # 1
+
+    # Test random number fetch, but don't assert
+    await hov.execute_instr(0b1110_00_00_00_0_01_00_00_0_0_0_000000_000000)  # W=RND
+    await hov.execute_instr(0b1110_00_00_00_0_01_00_00_1_0_0_000000_000000)  # OUT1=W, W=RND
+    await hov.execute_instr(0b1110_00_00_00_0_00_00_00_1_1_0_000000_000000)  # OUT2=W
+    assert hov.out1 != hov.out2 # Because random numbers are actually deterministic in test, this is OK
+    print("Random numbers: ", hov.out1, hov.out2)
 
 @cocotb.test()
 async def test_branch(dut):

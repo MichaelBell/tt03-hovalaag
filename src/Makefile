@@ -7,8 +7,9 @@ TOPLEVEL_LANG ?= verilog
 
 ifneq ($(GATES),yes)
 # normal simulation
-VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/hovalaag_wrapper.v $(PWD)/hovalaag_tiny_tapeout.v $(PWD)/decoder.v $(PWD)/HovalaagCPU/Hovalaag.v
+VERILOG_SOURCES += $(PWD)/tb.v $(PWD)/hovalaag_wrapper.v $(PWD)/hovalaag_tiny_tapeout.v $(PWD)/decoder.v $(PWD)/ring_oscillator.v $(PWD)/HovalaagCPU/Hovalaag.v
 COMPILE_ARGS += -I$(PWD)/HovalaagCPU
+COMPILE_ARGS    += -DSIM
 else
 # copy the gatelevel verilog from /runs/wokwi/results/final/verilog/gl/ and commit to this directory
 GATE_SOURCES := $(filter-out $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.nl.v), $(wildcard $(PWD)/../runs/wokwi/results/final/verilog/gl/*.v))
@@ -20,9 +21,8 @@ COMPILE_ARGS    += -DFUNCTIONAL
 COMPILE_ARGS    += -DUSE_POWER_PINS
 COMPILE_ARGS    += -DSIM
 COMPILE_ARGS    += -DUNIT_DELAY=#1
-COMPILE_ARGS    += -DSIM
-VERILOG_SOURCES += $(PDK_ROOT)/sky130B/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
-VERILOG_SOURCES += $(PDK_ROOT)/sky130B/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
+VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v
+VERILOG_SOURCES += $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v
 endif
 
 # TOPLEVEL is the name of the toplevel module in your Verilog or VHDL file

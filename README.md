@@ -27,7 +27,7 @@ The instruction and data therefore need to be passed in and out over several (cu
 | 6     | New IN1 5-0       | New PC |
 | 7     | New IN1 11-6      | OUT 7-0 |
 | 8     | New IN2 5-0       | OUT 11-8 |
-| 9     | New IN2 11-6      | |
+| 9     | New IN2 11-6      | OUT 3-0 for 7 segment display |
 
 The IO update indication bits on the 6th clock are as follows:
 | Bit | Meaning |
@@ -37,17 +37,27 @@ The IO update indication bits on the 6th clock are as follows:
 | 2   | Write OUT to OUT1 |
 | 3   | Write OUT to OUT2 |
 
+The implemented design also adds the following ALU ops in the unused range (originally documented as BCD conversions, but previously never used):
+```
+1101   A
+1110   Random 6-bit number
+1111   The constant 1
+```
+
 ## TODO
 
-Changes to the design, ideally before submission:
-- More test cases
-- Make Output 9 bottom 4 bits of OUT formatted for 7 segment
+Before submission:
+- Add tests of some more complex programs to check they are running run as expected.
+
+Not doing because we've run out of space:
 - Option to format debug for 7 segment (set option using another IO when reset\_en high)
-- Add a simple ring oscillator and make the unused ALU OPs read a counter driven by it (low bits are effectively random, high bits would be interesting to understand the rate of it)
 
 Making the hardware usable:
+- Modified version of the assembler supporting the new ops.
 - Easy way to assemble a vasm program and build the output plus some data into a firmware for Pico
 - Firmware for Pico to communicate with the PCB.  Ideally could be generally useful for any design.
+
+Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.  Not sure I'll get chance to do that before the deadline though.
 
 # What is Tiny Tapeout?
 
