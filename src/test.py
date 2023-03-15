@@ -341,8 +341,8 @@ class HovaRunProgram:
 
         self.dut.data_in.value = instr & 0x3
         await ClockCycles(self.dut.clk, 1)
-        if (self.dut.data_out.value & 0x1) != 0: self.in1 = self.in1[1:]
-        if (self.dut.data_out.value & 0x2) != 0: self.in2 = self.in2[1:]
+        if (self.dut.data_out.value & 0x1) != 0: self.in1.pop(0)
+        if (self.dut.data_out.value & 0x2) != 0: self.in2.pop(0)
         out1_valid = (self.dut.data_out.value & 0x4) != 0
         out2_valid = (self.dut.data_out.value & 0x8) != 0
 
@@ -400,3 +400,111 @@ async def test_example_loop1(dut):
 
     for i in range(NUM_VALUES):
         assert hov.out1[i] == in1[i] * 8
+
+@cocotb.test()
+async def test_example_loop5(dut):
+    #     ALU- A- B- C- D W- F- PC O I X K----- L-----
+    prog = [
+        0b0000_11_00_00_0_00_00_00_0_0_0_000000_000000,  # A=IN1
+        0b0000_00_10_00_0_00_00_00_0_0_0_000000_000000,  # B=A
+        0b0101_01_01_00_0_00_00_00_0_0_0_000000_000000,  # A=B=A+B
+        0b0101_01_01_00_0_00_00_00_0_0_0_000000_000000,  # A=B=A+B
+        0b0101_11_00_00_0_01_00_00_0_0_0_000000_000000,  # W=A+B,A=IN1
+        0b0000_00_10_00_0_00_00_01_1_0_0_000000_000010,  # OUT1=W,B=A,JMP 2
+    ]
+
+    NUM_VALUES = 10
+    in1 = [random.randint(-2048 // 8,2047 // 8) for x in range(NUM_VALUES)]
+    in1.append(0)
+
+    hov = HovaRunProgram(dut, prog, in1)
+    await hov.start_and_reset()
+
+    await hov.execute_until_out1_len(NUM_VALUES)
+
+    for i in range(NUM_VALUES):
+        assert hov.out1[i] == in1[i] * 8
+
+@cocotb.test()
+async def test_aoc2020_1_1(dut):
+    prog = [
+        0x0f0017e4,
+        0x6d001000,
+        0x60127000,
+        0x0c001000,
+        0x10031011,
+        0x60137007,
+        0x0c009004,
+        0x0c003000,
+        0x0c003000,
+        0x030017e4,
+        0x6d183000,
+        0x60127000,
+        0x0c013011,
+        0x10021000,
+        0x6c137009,
+        0x10031011,
+        0x0000900e,
+        0x270057e4,
+        0x60081000,
+        0x00005000,
+    ]
+
+    in1 = [
+        2000, 50, 1984, 1648, 32, 1612, 1992, 1671, 1955, 1658, 1592, 1596, 1888, 1540, 239, 1677, 1602, 1877, 1481, 2004, 1985, 1829, 1980, 1500, 1120, 1849, 1941, 1403, 1515, 1915, 1862, 2002, 1952, 1893, 1494, 1610, 1432, 1547, 1488, 1642, 1982, 1666, 1856, 1889, 1691, 1976, 1962, 2005, 1611, 1665, 1816, 1880, 1896, 1552, 1809, 1844, 1553, 1841, 1785, 1968, 1491, 1498, 1995, 1748, 1533, 1988, 2001, 1917, 0
+    ]
+
+    hov = HovaRunProgram(dut, prog, in1)
+    await hov.start_and_reset()
+
+    await hov.execute_until_out1_len(2)
+    print(hov.out1[0], hov.out1[1])
+    assert hov.out1[0] + hov.out1[1] == 2020
+
+@cocotb.test()
+async def test_aoc2020_5_2(dut):
+    prog = [
+        0x0c001000,
+        0x1c921000,
+        0x0001f001,
+        0x0c003000,
+        0x1e123000,
+        0x6007100c,
+        0x00011008,
+        0x0000f004,
+        0x10121000,
+        0x0001100f,
+        0x20887000,
+        0x0c00f004,
+        0x30041000,
+        0x00417004,
+        0x0000f012,
+        0x20081000,
+        0x301c7000,
+        0x0c417004,
+        0x0e003000,
+        0x67201fff,
+        0x68021000,
+        0x50091012,
+        0x00005000,
+    ]
+
+    # The program outputs the one missing value from a range of values
+    NUM_VALUES = 7
+    offset = random.randint(1,1000)
+    removed_idx = random.randint(1, NUM_VALUES - 1)
+    in1 = [x + offset for x in range(NUM_VALUES + 1)]
+    removed_value = in1[removed_idx]
+    del in1[removed_idx]
+    print(in1)
+    random.shuffle(in1)
+    in1.append(0)
+    in1.append(0)
+    print(in1)
+
+    hov = HovaRunProgram(dut, prog, in1)
+    await hov.start_and_reset()
+
+    await hov.execute_until_out1_len(1)
+
+    assert hov.out1[0] == removed_value

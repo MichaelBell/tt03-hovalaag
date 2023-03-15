@@ -46,8 +46,7 @@ The implemented design also adds the following ALU ops in the unused range (orig
 
 ## TODO
 
-Before submission:
-- Add tests of some more complex programs to check they are running run as expected.
+Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.
 
 Not doing because we've run out of space:
 - Option to format debug for 7 segment (set option using another IO when reset\_en high)
@@ -56,8 +55,6 @@ Making the hardware usable:
 - Modified version of the assembler supporting the new ops.
 - Easy way to assemble a vasm program and build the output plus some data into a firmware for Pico
 - Firmware for Pico to communicate with the PCB.  Ideally could be generally useful for any design.
-
-Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.  Not sure I'll get chance to do that before the deadline though.
 
 # What is Tiny Tapeout?
 

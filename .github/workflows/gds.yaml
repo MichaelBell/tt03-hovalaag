@@ -225,15 +225,6 @@ jobs:
         # make will return success even if the test fails, so check for failure in the results.xml
         ! grep failure results.xml
 
-    - name: upload vcd
-      if: success() || failure()
-      uses: actions/upload-artifact@v3
-      with:
-          name: gatelevel-test-vcd
-          path: |
-            src/tb.vcd
-            src/results.xml
-
 ##############################################################
 # Publish to pages to get a nicely formatted result
 

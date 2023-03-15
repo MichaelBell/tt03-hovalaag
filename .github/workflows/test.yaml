@@ -33,7 +33,7 @@ jobs:
         ! grep failure results.xml
 
     - name: upload vcd
-      if: success() || failure()
+      if: failure()  # Removed success as this is now quite large
       uses: actions/upload-artifact@v3
       with:
           name: test-vcd
