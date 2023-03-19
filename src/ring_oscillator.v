@@ -18,57 +18,50 @@
 module RingOscillator
     #(parameter COUNT_WIDTH = 8)
 (
-    input clk,
     input reset,
     output [COUNT_WIDTH-1:0] fast_count
 );
-    // 3 stage ring oscillator
-    wire [2:0] c;
-    wire c2_clkout;
-    wire fast_clk;
-    reg [2:0] reset_hold;
+    // 7 stage ring oscillator
+    wire [6:0] c;
 
-    // Divided output
-    reg [2:0] out;
-
-    always @(posedge clk) begin
-        if (reset) begin
-            reset_hold <= 3'b010;
-        end else if (reset_hold[2:1] != 2'b00) begin
-            reset_hold <= reset_hold + 1;
-        end
-    end
-
-    // Ring of 3 inversions with reset.
+    // Ring of 7 inversions with reset.
 `ifdef SIM
+    assign #20 c[6] = ~c[5];
+    assign #20 c[5] = ~c[4];
+    assign #20 c[4] = ~c[3];
+    assign #20 c[3] = ~c[2];
     assign #20 c[2] = ~c[1];
     assign #20 c[1] = ~c[0];
-    assign #20 c[0] = reset ? 1'b0 : ~c[2];
-    
-    assign #1 c2_clkout = c[2];
-    assign #1 fast_clk = out[2];
+    assign #20 c[0] = reset ? 1'b0 : ~c[6];
 `else
+    sky130_fd_sc_hd__inv_1 inv6(.Y(c[6]), .A(c[5]));
+    sky130_fd_sc_hd__inv_1 inv5(.Y(c[5]), .A(c[4]));
+    sky130_fd_sc_hd__inv_1 inv4(.Y(c[4]), .A(c[3]));
+    sky130_fd_sc_hd__inv_1 inv3(.Y(c[3]), .A(c[2]));
     sky130_fd_sc_hd__inv_1 inv2(.Y(c[2]), .A(c[1]));
     sky130_fd_sc_hd__inv_1 inv1(.Y(c[1]), .A(c[0]));
-    assign c[0] = reset ? 1'b0 : ~c[2];
-
-    sky130_fd_sc_hd__clkbuf_1 c2clkbuf(.X(c2_clkout), .A(c[2]));
-    sky130_fd_sc_hd__clkbuf_1 fastclkbuf(.X(fast_clk), .A(out[2]));
+    assign c[0] = reset ? 1'b0 : ~c[6];
 `endif
 
-    always @(posedge c2_clkout) begin
-        if (reset_hold[1]) begin
-            out <= 3'b000;
+    // Divided output
+    reg [1:0] out;
+
+    always @(posedge c[6] or posedge reset) begin
+        if (reset) begin
+            out <= 2'b00;
         end else begin
             out <= out + 1;
         end
     end
 
+    wire fast_clk;
+    assign fast_clk = out[1];
+
     // Counter driven by divided output
     reg [COUNT_WIDTH-1:0] counter;
 
-    always @(posedge fast_clk) begin
-        if (reset_hold[2]) begin
+    always @(posedge fast_clk or posedge reset) begin
+        if (reset) begin
             counter <= 0;
         end else begin
             counter <= counter + 1;

@@ -86,7 +86,6 @@ module HovalaagWrapper(
     );
 
     RingOscillator #(.COUNT_WIDTH(RNG_WIDTH)) rosc (
-        .clk(clk),
         .reset(reset),
         .fast_count(fast_count)
     );

@@ -295,7 +295,6 @@ async def test_io(dut):
     # OUT1=W,W=-A
     #                         ALU- A- B- C- D W- F- PC O I X K----- L-----
     await hov.execute_instr(0b0001_00_00_00_0_01_00_00_1_0_0_000000_000000)
-    print(hov.out1, hov.out2)
     assert hov.out2 == 42
     assert hov.out1 == 23
 
@@ -458,7 +457,6 @@ async def test_aoc2020_1_1(dut):
     await hov.start_and_reset()
 
     await hov.execute_until_out1_len(2)
-    print(hov.out1[0], hov.out1[1])
     assert hov.out1[0] + hov.out1[1] == 2020
 
 @cocotb.test()
@@ -496,11 +494,9 @@ async def test_aoc2020_5_2(dut):
     in1 = [x + offset for x in range(NUM_VALUES + 1)]
     removed_value = in1[removed_idx]
     del in1[removed_idx]
-    print(in1)
     random.shuffle(in1)
     in1.append(0)
     in1.append(0)
-    print(in1)
 
     hov = HovaRunProgram(dut, prog, in1)
     await hov.start_and_reset()

@@ -46,6 +46,8 @@ The implemented design also adds the following ALU ops in the unused range (orig
 
 ## TODO
 
+Spice simulation of ROSC - would be good to confirm the design is plausible.  Once I know the approximate frequency, how can I tell the synthesis that it's a clock?  Only see the option to have one clock.
+
 Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.
 
 Not doing because we've run out of space:
