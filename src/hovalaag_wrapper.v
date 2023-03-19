@@ -90,7 +90,7 @@ module HovalaagWrapper(
         .fast_count(fast_count)
     );
 
-    always @(posedge clk) buffered_fast_count <= fast_count;
+    always @(negedge clk) buffered_fast_count <= fast_count;
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
