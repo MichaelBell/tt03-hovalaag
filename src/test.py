@@ -187,15 +187,8 @@ async def test_alu(dut):
     await test_alu_op(hov, 0b1011, 7, 35, 7^35)  # A^B
     await test_alu_op(hov, 0b1100, 7, 35, ~7)  # ~A
     await test_alu_op(hov, 0b1101, 7, 35, 7)  # A
-    # await test_alu_op(hov, 0b1110, 8, 35, 8)  # Random number
+    await test_alu_op(hov, 0b1110, 8, 35, -1)  # -1
     await test_alu_op(hov, 0b1111, 9, 42, 1)  # 1
-
-    # Test random number fetch, but don't assert
-    await hov.execute_instr(0b1110_00_00_00_0_01_00_00_0_0_0_000000_000000)  # W=RND
-    await hov.execute_instr(0b1110_00_00_00_0_01_00_00_1_0_0_000000_000000)  # OUT1=W, W=RND
-    await hov.execute_instr(0b1110_00_00_00_0_00_00_00_1_1_0_000000_000000)  # OUT2=W
-    assert hov.out1 != hov.out2 # Because random numbers are actually deterministic in test, this is OK
-    print("Random numbers: ", hov.out1, hov.out2)
 
 @cocotb.test()
 async def test_branch(dut):
