@@ -36,7 +36,7 @@ include $(shell cocotb-config --makefiles)/Makefile.sim
 gate_level_netlist.v: ../runs/wokwi/results/final/verilog/gl/*.v
 	rm -f ../runs/wokwi/results/final/verilog/gl/*.nl.v
 	cp ../runs/wokwi/results/final/verilog/gl/*.v gate_level_netlist.v
-	sed -i '/sky130_fd_sc_hd__inv_1 \\wrapper.rosc.inv/s/sky130_fd_sc_hd__inv_1/inv_with_delay/' gate_level_netlist.v
+	sed -i '/sky130_fd_sc_hd__inv_[12] \\wrapper\.rosc\..*\.inv/s/sky130_fd_sc_hd__inv_[12]/inv_with_delay/' gate_level_netlist.v
 
 clean::
 	rm -f gate_level_netlist.v
