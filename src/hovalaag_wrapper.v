@@ -42,7 +42,6 @@ module HovalaagWrapper(
     reg [11:0] in1;
     reg [11:0] in2;
 
-    wire cpu_clk;
     wire in1_adv;
     wire in2_adv;
     wire [11:0] out;
@@ -60,14 +59,9 @@ module HovalaagWrapper(
 
     wire [6:0] seg7_out;
 
-`ifdef SIM
-    assign cpu_clk = (reset || addr[5]) && clk;
-`else
-    sky130_fd_sc_hd__clkbuf_16 clkcpu(.X(cpu_clk), .A((reset || addr[5]) && clk));
-`endif
-
     Hovalaag hov (
-        .clk(cpu_clk),
+        .clk(clk),
+        .clk_en(addr[5]),
         .IN1(in1),
         .IN1_adv(in1_adv),
         .IN2(in2),

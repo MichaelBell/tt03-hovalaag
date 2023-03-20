@@ -26,7 +26,7 @@ module MichaelBell_hovalaag (
   input [7:0] io_in,
   output [7:0] io_out
 );
-    wire clk;
+    wire clk = io_in[0];
     wire inv_clk;
 
     wire reset;
@@ -36,13 +36,11 @@ module MichaelBell_hovalaag (
     assign reset = io_in[1] && io_in[2];
 
 `ifdef SIM
-    assign inv_clk = ~clk;
-    assign clk = io_in[0];
+    assign inv_clk = ~io_in[0];
 `else
     wire inv_clk_mid;
     sky130_fd_sc_hd__inv_1 clkinv(.Y(inv_clk_mid), .A(io_in[0]));
     sky130_fd_sc_hd__clkbuf_4 invclkbuf(.X(inv_clk), .A(inv_clk_mid));
-    sky130_fd_sc_hd__clkbuf_8 clktop(.X(clk), .A(io_in[0]));
 `endif
 
     HovalaagWrapper wrapper (
