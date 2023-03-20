@@ -40,7 +40,7 @@ The IO update indication bits on the 6th clock are as follows:
 The implemented design also adds the following ALU ops in the unused range (originally documented as BCD conversions, but previously never used):
 ```
 1101   A
-1110   Random 6-bit number
+1110   Random number
 1111   The constant 1
 ```
 

@@ -20,6 +20,7 @@
 
 module HovalaagWrapper(
     input clk,     // Clock for the wrapper
+    input inv_clk,
     input reset,
 
     input [9:0] addr, // 1-hot.  
@@ -35,7 +36,7 @@ module HovalaagWrapper(
     input [5:0] io_in,
     output [7:0] io_out
 );
-    parameter RNG_WIDTH = 6;
+    parameter RNG_WIDTH = 12;
 
     reg [29:0] instr;
     reg [11:0] in1;
@@ -59,7 +60,11 @@ module HovalaagWrapper(
 
     wire [6:0] seg7_out;
 
+`ifdef SIM
     assign cpu_clk = (reset || addr[5]) && clk;
+`else
+    sky130_fd_sc_hd__clkbuf_16 clkcpu(.X(cpu_clk), .A((reset || addr[5]) && clk));
+`endif
 
     Hovalaag hov (
         .clk(cpu_clk),
@@ -90,7 +95,7 @@ module HovalaagWrapper(
         .fast_count(fast_count)
     );
 
-    always @(negedge clk) buffered_fast_count <= fast_count;
+    always @(posedge inv_clk) buffered_fast_count <= fast_count;
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
