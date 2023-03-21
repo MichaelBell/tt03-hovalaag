@@ -23,19 +23,18 @@ module HovalaagWrapper(
     input reset_n,
     input reset_rosc_n,
 
-    input [3:0] addr, // Input:  0-4: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29
-                      //           5: Instr bits 30-31 and execute
-                      //         6-7: Set IN1 bits 0-5, 6-11  
-                      //         8-9: Set IN2 bits 0-5, 6-11
-                      // Output: 0-4: Low 8 bits of registers A-D, W for debugging
-                      //           5: Execute status: 0: IN1 advance, 1: IN2 advance, 2: OUT1 valid, 3: OUT2 valid
-                      //           6: New PC
-                      //         7-8: OUT bits 0-7, 8-11 (valid for OUT1 or OUT2 if one of the valid bits was set)
-                      //           9: OUT bits 0-3, 11 in 7-segment format (11 sets the 8th output)
+    input [2:0] addr, // Input is DDR
+                      // Input:  0-2: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29, 30-31
+                      //           3: Set IN1 bits 0-5, 6-11  
+                      //           4: Set IN2 bits 0-5, 6-11
+                      // Output:   2: Execute status: 0: IN1 advance, 1: IN2 advance, 2: OUT1 valid, 3: OUT2 valid
+                      //           4: New PC
+                      //           0-1: OUT bits 0-7, 8-11 (valid for OUT1 or OUT2 if one of the valid bits was set)
+                      //           3: OUT bits 0-3, 11 in 7-segment format (11 sets the 8th output)
     input [5:0] io_in,
     output [7:0] io_out
 );
-    reg [29:0] instr;
+    reg [31:0] instr;
     reg [11:0] in1;
     reg [11:0] in2;
 
@@ -46,35 +45,25 @@ module HovalaagWrapper(
     wire out_select;
     wire [7:0] pc;
 
-    wire [2:0] fast_count;
-    reg [2:0] buffered_fast_count;
+    wire [5:0] fast_count;
+    reg [5:0] buffered_fast_count;
     reg [11:0] rng_bits;
-
-    wire [11:0] a_dbg;
-    wire [11:0] b_dbg;
-    wire [11:0] c_dbg;
-    wire [11:0] d_dbg;
 
     wire [6:0] seg7_out;
 
     Hovalaag hov (
         .clk(clk),
-        .clk_en(addr == 5),
+        .clk_en(addr == 3),
         .IN1(in1),
         .IN1_adv(in1_adv),
         .IN2(in2),
         .IN2_adv(in2_adv),
         .OUT(out),
-        .instr({io_in[1:0], instr[29:0]}),
+        .instr(instr),
         .PC_out(pc),
         .rst(!reset_n),
         .alu_op_14_source(rng_bits),
-        .alu_op_15_source(12'h001),
-
-        .A_dbg(a_dbg),
-        .B_dbg(b_dbg),
-        .C_dbg(c_dbg),
-        .D_dbg(d_dbg)
+        .alu_op_15_source(12'h001)
     );
 
     Seg7 seg7 (
@@ -84,7 +73,7 @@ module HovalaagWrapper(
 
     reg rosc_pause;
 
-    RingOscillator #(.NUM_FAST_CLKS(3), .STAGES(11)) rosc (
+    RingOscillator #(.NUM_FAST_CLKS(6), .STAGES(11)) rosc (
         .reset_n(reset_rosc_n),
         .pause(rosc_pause),
         .fast_clk(fast_count)
@@ -96,25 +85,16 @@ module HovalaagWrapper(
             rng_bits <= 0;
         end else begin
             if (rosc_pause) begin
-                rng_bits[11:3] <= rng_bits[8:0];
-                rng_bits[2:0] <= buffered_fast_count[2:0];
+                rng_bits[11:6] <= rng_bits[5:0];
+                rng_bits[5:0] <= buffered_fast_count[5:0];
             end
             rosc_pause <= ~rosc_pause;
         end
-    end    
-
-`ifdef SIM
-    always @(negedge clk) begin
-        buffered_fast_count[2:0] <= fast_count & {3{rosc_pause}};
     end
-`else
-    genvar i;
-    generate
-        for (i = 0; i < 3; i = i + 1) begin
-            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(fast_count[i] && rosc_pause), .CLK_N(clk), .RESET_B(reset_n));
-        end
-    endgenerate
-`endif
+
+    always @(negedge clk) begin
+        buffered_fast_count[5:0] <= fast_count & {6{rosc_pause}};
+    end
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
@@ -123,44 +103,55 @@ module HovalaagWrapper(
 
     always @(posedge clk) begin
         if (!reset_n) begin
-            instr <= 0;
+            instr[5:0] <= 0;
+            instr[17:12] <= 0;
+            instr[29:24] <= 0;
             in1 <= 0;
             in2 <= 0;
         end
         else begin
             case (addr)
             0: instr[ 5: 0] <= io_in;
-            1: instr[11: 6] <= io_in;
-            2: instr[17:12] <= io_in;
-            3: instr[23:18] <= io_in;
-            4: instr[29:24] <= io_in;
-            6: in1[ 5: 0] <= io_in;
-            7: in1[11: 6] <= io_in;
-            8: in2[ 5: 0] <= io_in;
-            9: in2[11: 6] <= io_in;
+            1: instr[17:12] <= io_in;
+            2: instr[29:24] <= io_in;
+            3: in1[5: 0] <= io_in;
+            4: in2[5: 0] <= io_in;
             endcase
         end
     end
 
-    function [7:0] get_out(input [3:0] addr);
+    always @(negedge clk) begin
+        if (!reset_n) begin
+            instr[11:6] <= 0;
+            instr[23:18] <= 0;
+            instr[31:30] <= 0;
+            in1[11:6] <= 0;
+            in2[11:6] <= 0;
+        end
+        else begin
+            case (addr)
+            0: instr[11: 6] <= io_in;
+            1: instr[23:18] <= io_in;
+            2: instr[31:30] <= io_in;
+            3: in1[11: 6] <= io_in;
+            4: in2[11: 6] <= io_in;
+            endcase
+        end
+    end
+
+    function [7:0] get_out(input [2:0] addr);
         case (addr)
-        0: get_out = a_dbg[7:0];
-        1: get_out = b_dbg[7:0];
-        2: get_out = c_dbg[7:0];
-        3: get_out = d_dbg[7:0];
-        4: get_out = out[7:0];   // OUT is in fact always W.
-        5: begin
+        2: begin
             get_out[0] = in1_adv;
             get_out[1] = in2_adv;
             get_out[2] = out_valid && !out_select;
             get_out[3] = out_valid && out_select;
             get_out[7:4] = 0;
         end
-        6: get_out = pc;
-        7: get_out = out[ 7: 0];
-        8: get_out = { 4'b0000, out[11: 8] };
-        9: get_out = { out[11], seg7_out };
-        default: get_out = 8'bx;
+        4: get_out = pc;
+        0: get_out = out[ 7: 0];
+        1: get_out = { 4'b0000, out[11: 8] };
+        3: get_out = { out[11], seg7_out };
         endcase
     endfunction
 
