@@ -63,7 +63,7 @@ module RingOscillator
 `ifdef SIM
     assign fast_clk = clk_div[1];
 `else
-    sky130_fd_sc_hd__clkbuf_1 fastclkbuf(.X(fast_clk), .A(clk_div[1]));
+    sky130_fd_sc_hd__clkbuf_8 fastclkbuf(.X(fast_clk), .A(clk_div[1]));
 `endif
 
     // Counter driven by divided output

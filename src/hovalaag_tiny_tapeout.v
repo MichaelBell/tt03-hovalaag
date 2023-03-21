@@ -28,6 +28,7 @@ module MichaelBell_hovalaag (
 );
     wire clk = io_in[0];
     wire inv_clk;
+    wire inv_clk2;
 
     wire reset;
 
@@ -37,10 +38,12 @@ module MichaelBell_hovalaag (
 
 `ifdef SIM
     assign inv_clk = ~io_in[0];
+    assign inv_clk2 = ~io_in[0];
 `else
     wire inv_clk_mid;
     sky130_fd_sc_hd__inv_1 clkinv(.Y(inv_clk_mid), .A(io_in[0]));
-    sky130_fd_sc_hd__clkbuf_4 invclkbuf(.X(inv_clk), .A(inv_clk_mid));
+    sky130_fd_sc_hd__clkbuf_8 invclkbuf(.X(inv_clk), .A(inv_clk_mid));
+    sky130_fd_sc_hd__clkbuf_8 invclkbuf2(.X(inv_clk2), .A(inv_clk_mid));
 `endif
 
     HovalaagWrapper wrapper (
@@ -52,7 +55,7 @@ module MichaelBell_hovalaag (
         .io_out(io_out[7:0])
     );
 
-    always @(posedge inv_clk) begin
+    always @(posedge inv_clk2) begin
         if (io_in[1] && (io_in[2] || io_in[3])) begin
             addr <= 10'b1000000000;
         end
