@@ -46,7 +46,7 @@ The implemented design also adds the following ALU ops in the unused range (orig
 
 ## TODO
 
-Ability to disable ROSC.  Increase stages if possible to slow down clock.
+Look into the possibility of doing DDR to reduce the number of scan chain cycles per CPU cycle.
 
 Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.
 
