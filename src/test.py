@@ -187,8 +187,15 @@ async def test_alu(dut):
     await test_alu_op(hov, 0b1011, 7, 35, 7^35)  # A^B
     await test_alu_op(hov, 0b1100, 7, 35, ~7)  # ~A
     await test_alu_op(hov, 0b1101, 7, 35, 7)  # A
-    # await test_alu_op(hov, 0b1110, 8, 35, 8)  # Random number
+    await test_alu_op(hov, 0b1110, 8, 35, 0)  # Random number - disabled
     await test_alu_op(hov, 0b1111, 9, 42, 1)  # 1
+
+    # Enable ROSC
+    dut.rst.value = 1
+    dut.data_in.value = 6
+    await ClockCycles(dut.clk, 1)
+    dut.rst.value = 0
+    dut.data_in.value = 0
 
     # Test random number fetch, but don't assert
     await hov.execute_instr(0b1110_00_00_00_0_01_00_00_0_0_0_000000_000000)  # W=RND
@@ -196,6 +203,16 @@ async def test_alu(dut):
     await hov.execute_instr(0b1110_00_00_00_0_00_00_00_1_1_0_000000_000000)  # OUT2=W
     assert hov.out1 != hov.out2 # Because random numbers are actually deterministic in test, this is OK
     print("Random numbers: ", hov.out1, hov.out2)
+
+    # Check things are still working normally.
+    await test_alu_op(hov, 0b0110, 35, 7, -28)  # B-A
+    await test_alu_op(hov, 0b0111, 7, 35, 43)  # A+B+F
+    await test_alu_op(hov, 0b0110, 35, 7, -28)  # B-A
+    await test_alu_op(hov, 0b1000, 7, 35, 27)  # B-A-F
+
+    await test_alu_op(hov, 0b1001, 7, 35, 7|35)  # A|B
+    await test_alu_op(hov, 0b1010, 7, 35, 7&35)  # A&B
+    await test_alu_op(hov, 0b1011, 7, 35, 7^35)  # A^B
 
 @cocotb.test()
 async def test_branch(dut):

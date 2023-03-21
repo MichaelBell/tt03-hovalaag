@@ -22,6 +22,7 @@ module HovalaagWrapper(
     input clk,     // Clock for the wrapper
     input inv_clk,
     input reset,
+    input reset_rosc,
 
     input [9:0] addr, // 1-hot.  
                       // Input:  0-4: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29
@@ -80,12 +81,12 @@ module HovalaagWrapper(
     );
 
     Seg7 seg7 (
-        .counter(out[3:0]),
-        .segments(seg7_out)
+        .value(out[3:0]),
+        .seg_out(seg7_out)
     );
 
-    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH)) rosc (
-        .reset(reset),
+    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(9)) rosc (
+        .reset(reset_rosc),
         .fast_count(fast_count)
     );
 

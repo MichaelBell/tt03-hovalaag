@@ -12,11 +12,11 @@
 */
 
 module Seg7 (
-    input wire [3:0] counter,
-    output reg [6:0] segments
+    input wire [3:0] value,
+    output wire [6:0] seg_out
 );
 
-    always @(*) begin
+    function [6:0] segments(input [3:0] counter);
         case(counter)
             //                7654321
             0:  segments = 7'b0111111;
@@ -38,7 +38,9 @@ module Seg7 (
             default:    
                 segments = 7'b0000000;
         endcase
-    end
+    endfunction
+
+    assign seg_out = segments(value);
 
 endmodule
 
