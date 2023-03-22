@@ -27,33 +27,23 @@ module MichaelBell_hovalaag (
   output [7:0] io_out
 );
     wire clk = io_in[0];
-    wire inv_clk;
 
     wire reset;
     reg reset_rosc;
 
-    reg [9:0] addr;
+    reg [3:0] addr;
+    reg [3:0] next_addr;
 
     assign reset = io_in[1] && io_in[2];
 
-`ifdef SIM
-    assign inv_clk = ~io_in[0];
-`else
-    wire inv_clk_mid;
-    sky130_fd_sc_hd__inv_1 clkinv(.Y(inv_clk_mid), .A(io_in[0]));
-    sky130_fd_sc_hd__clkbuf_8 invclkbuf(.X(inv_clk), .A(inv_clk_mid));
-`endif
-
     HovalaagWrapper wrapper (
         .clk(clk),
-        .inv_clk(inv_clk),
         .reset(reset),
         .reset_rosc(reset_rosc),
         .addr(addr),
         .io_in(io_in[7:2]),
         .io_out(io_out[7:0])
     );
-
 
     always @(posedge clk) begin
         if (io_in[1] && io_in[2]) begin
@@ -62,15 +52,18 @@ module MichaelBell_hovalaag (
         else if (io_in[1] && io_in[4]) begin
             reset_rosc <= 1'b0;
         end
+
+        if (io_in[1] && (io_in[2] || io_in[3])) begin
+            next_addr <= 4'h0;
+        end
+        else begin
+            if (next_addr == 9) next_addr <= 0;
+            else next_addr <= next_addr + 1;
+        end
     end
 
     always @(negedge clk) begin
-        if (io_in[1] && (io_in[2] || io_in[3])) begin
-            addr <= 10'b1000000000;
-        end
-        else begin
-            addr <= { addr[8:0], addr[9] };
-        end
+        addr <= next_addr;
     end
 
 endmodule

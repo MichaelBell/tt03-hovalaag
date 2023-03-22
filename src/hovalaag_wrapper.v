@@ -20,12 +20,10 @@
 
 module HovalaagWrapper(
     input clk,     // Clock for the wrapper
-    input inv_clk,
     input reset,
     input reset_rosc,
 
-    input [9:0] addr, // 1-hot.  
-                      // Input:  0-4: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29
+    input [3:0] addr, // Input:  0-4: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29
                       //           5: Instr bits 30-31 and execute
                       //         6-7: Set IN1 bits 0-5, 6-11  
                       //         8-9: Set IN2 bits 0-5, 6-11
@@ -62,7 +60,7 @@ module HovalaagWrapper(
 
     Hovalaag hov (
         .clk(clk),
-        .clk_en(addr[5]),
+        .clk_en(addr == 5),
         .IN1(in1),
         .IN1_adv(in1_adv),
         .IN2(in2),
@@ -85,12 +83,12 @@ module HovalaagWrapper(
         .seg_out(seg7_out)
     );
 
-    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(9)) rosc (
+    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(11)) rosc (
         .reset(reset_rosc),
         .fast_count(fast_count)
     );
 
-    always @(posedge inv_clk) buffered_fast_count <= fast_count;
+    always @(negedge clk) buffered_fast_count <= fast_count;
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
@@ -105,37 +103,38 @@ module HovalaagWrapper(
         end
         else begin
             case (addr)
-            10'b0000000001: instr[ 5: 0] <= io_in;
-            10'b0000000010: instr[11: 6] <= io_in;
-            10'b0000000100: instr[17:12] <= io_in;
-            10'b0000001000: instr[23:18] <= io_in;
-            10'b0000010000: instr[29:24] <= io_in;
-            10'b0001000000: in1[ 5: 0] <= io_in;
-            10'b0010000000: in1[11: 6] <= io_in;
-            10'b0100000000: in2[ 5: 0] <= io_in;
-            10'b1000000000: in2[11: 6] <= io_in;
+            0: instr[ 5: 0] <= io_in;
+            1: instr[11: 6] <= io_in;
+            2: instr[17:12] <= io_in;
+            3: instr[23:18] <= io_in;
+            4: instr[29:24] <= io_in;
+            6: in1[ 5: 0] <= io_in;
+            7: in1[11: 6] <= io_in;
+            8: in2[ 5: 0] <= io_in;
+            9: in2[11: 6] <= io_in;
             endcase
         end
     end
 
-    function [7:0] get_out(input [9:0] addr);
+    function [7:0] get_out(input [3:0] addr);
         case (addr)
-        10'b0000000001: get_out = a_dbg[7:0];
-        10'b0000000010: get_out = b_dbg[7:0];
-        10'b0000000100: get_out = c_dbg[7:0];
-        10'b0000001000: get_out = d_dbg[7:0];
-        10'b0000010000: get_out = out[7:0];   // OUT is in fact always W.
-        10'b0000100000: begin
+        0: get_out = a_dbg[7:0];
+        1: get_out = b_dbg[7:0];
+        2: get_out = c_dbg[7:0];
+        3: get_out = d_dbg[7:0];
+        4: get_out = out[7:0];   // OUT is in fact always W.
+        5: begin
             get_out[0] = in1_adv;
             get_out[1] = in2_adv;
             get_out[2] = out_valid && !out_select;
             get_out[3] = out_valid && out_select;
             get_out[7:4] = 0;
         end
-        10'b0001000000: get_out = pc;
-        10'b0010000000: get_out = out[ 7: 0];
-        10'b0100000000: get_out = { 4'b0000, out[11: 8] };
-        10'b1000000000: get_out = { out[11], seg7_out };
+        6: get_out = pc;
+        7: get_out = out[ 7: 0];
+        8: get_out = { 4'b0000, out[11: 8] };
+        9: get_out = { out[11], seg7_out };
+        default: get_out = 8'bx;
         endcase
     endfunction
 

@@ -133,7 +133,7 @@ async def test_reset(dut):
         await ClockCycles(dut.clk, i)
 
         # Remember if we got as far as incrementing PC.
-        if i >= 6: new_pc += 1
+        if i >= 5: new_pc += 1
 
         # Just reset the instruction address counter, not the whole thing
         dut.rst.value = 1
