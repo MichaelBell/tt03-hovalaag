@@ -35,8 +35,6 @@ module HovalaagWrapper(
     input [5:0] io_in,
     output [7:0] io_out
 );
-    parameter RNG_WIDTH = 12;
-
     reg [29:0] instr;
     reg [11:0] in1;
     reg [11:0] in2;
@@ -48,8 +46,8 @@ module HovalaagWrapper(
     wire out_select;
     wire [7:0] pc;
 
-    wire [RNG_WIDTH-1:0] fast_count;
-    reg [RNG_WIDTH-1:0] buffered_fast_count;
+    wire [2:0] fast_count;
+    reg [11:0] buffered_fast_count;
 
     wire [11:0] a_dbg;
     wire [11:0] b_dbg;
@@ -69,7 +67,7 @@ module HovalaagWrapper(
         .instr({io_in[1:0], instr[29:0]}),
         .PC_out(pc),
         .rst(!reset_n),
-        .alu_op_14_source({{(12-RNG_WIDTH){1'b0}}, buffered_fast_count}),
+        .alu_op_14_source(buffered_fast_count),
         .alu_op_15_source(12'h001),
 
         .A_dbg(a_dbg),
@@ -83,20 +81,24 @@ module HovalaagWrapper(
         .seg_out(seg7_out)
     );
 
-    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(17)) rosc (
+    RingOscillator #(.COUNT_WIDTH(3), .STAGES(11)) rosc (
         .reset_n(reset_rosc_n),
         .fast_count(fast_count)
     );
 
 `ifdef SIM
     always @(negedge clk) begin
-        buffered_fast_count <= fast_count;
+        buffered_fast_count[11:3] <= buffered_fast_count[8:0];
+        buffered_fast_count[2:0] <= fast_count;
     end
 `else
     genvar i;
     generate
-        for (i = 0; i < RNG_WIDTH; i = i + 1) begin
+        for (i = 0; i < 3; i = i + 1) begin
             sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(fast_count[i]), .CLK_N(clk), .RESET_B(reset_n));
+        end
+        for (i = 3; i < 12; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(buffered_fast_count[i-3]), .CLK_N(clk), .RESET_B(reset_n));
         end
     endgenerate
 `endif

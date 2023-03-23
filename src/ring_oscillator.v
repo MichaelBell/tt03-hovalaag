@@ -41,7 +41,7 @@ module RingOscillator
     assign c[0] = reset_n ? ~c[STAGES-1] : 1'b0;
 `endif
 
-    reg [1:0] clk_div;
+    reg [2:0] clk_div;
 
     always @(posedge c[STAGES-1] or negedge reset_n) begin
         if (!reset_n) begin
@@ -51,19 +51,23 @@ module RingOscillator
         end
     end
 
-    always @(posedge clk_div[0] or negedge reset_n) begin
-        if (!reset_n) begin
-            clk_div[1] <= 1'b0;
-        end else begin
-            clk_div[1] <= ~clk_div[1];
+    generate
+    for (i = 1; i <= 2; i = i + 1) begin
+        always @(posedge clk_div[i-1] or negedge reset_n) begin
+            if (!reset_n) begin
+                clk_div[i] <= 1'b0;
+            end else begin
+                clk_div[i] <= ~clk_div[i];
+            end
         end
     end
+    endgenerate
 
     wire fast_clk;
 `ifdef SIM
-    assign fast_clk = clk_div[1];
+    assign fast_clk = clk_div[2];
 `else
-    sky130_fd_sc_hd__clkbuf_8 fastclkbuf(.X(fast_clk), .A(clk_div[1]));
+    sky130_fd_sc_hd__clkbuf_8 fastclkbuf(.X(fast_clk), .A(clk_div[2]));
 `endif
 
     // Counter driven by divided output
