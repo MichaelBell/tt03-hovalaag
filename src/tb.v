@@ -22,7 +22,7 @@ module tb (
     end
 
     // wire up the inputs and outputs
-    wire [7:0] inputs = {data_in[5:0], rst, clk};
+    wire [7:0] inputs = {data_in[5:0], !rst, clk};
     wire [7:0] outputs;
     assign data_out = outputs;
 

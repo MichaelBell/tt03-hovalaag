@@ -18,7 +18,7 @@
 module RingOscillator
     #(parameter COUNT_WIDTH = 8, parameter STAGES=7)
 (
-    input reset,
+    input reset_n,
     output [COUNT_WIDTH-1:0] fast_count
 );
     wire [STAGES-1:0] c;
@@ -36,23 +36,23 @@ module RingOscillator
     endgenerate
 
 `ifdef SIM
-    assign #20 c[0] = reset ? 1'b0 : ~c[STAGES-1];
+    assign #20 c[0] = reset_n ? ~c[STAGES-1] : 1'b0;
 `else
-    assign c[0] = reset ? 1'b0 : ~c[STAGES-1];
+    assign c[0] = reset_n ? ~c[STAGES-1] : 1'b0;
 `endif
 
     reg [1:0] clk_div;
 
-    always @(posedge c[STAGES-1] or posedge reset) begin
-        if (reset) begin
+    always @(posedge c[STAGES-1] or negedge reset_n) begin
+        if (!reset_n) begin
             clk_div[0] <= 1'b0;
         end else begin
             clk_div[0] <= ~clk_div[0];
         end
     end
 
-    always @(posedge clk_div[0] or posedge reset) begin
-        if (reset) begin
+    always @(posedge clk_div[0] or negedge reset_n) begin
+        if (!reset_n) begin
             clk_div[1] <= 1'b0;
         end else begin
             clk_div[1] <= ~clk_div[1];
@@ -69,8 +69,8 @@ module RingOscillator
     // Counter driven by divided output
     reg [COUNT_WIDTH-1:0] counter;
 
-    always @(posedge fast_clk or posedge reset) begin
-        if (reset) begin
+    always @(posedge fast_clk or negedge reset_n) begin
+        if (!reset_n) begin
             counter <= 0;
         end else begin
             counter <= counter + 1;

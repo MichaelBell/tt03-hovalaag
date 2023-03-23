@@ -28,32 +28,33 @@ module MichaelBell_hovalaag (
 );
     wire clk = io_in[0];
 
-    wire reset;
-    reg reset_rosc;
+    wire reset_enable = !io_in[1];
+    wire reset_n;
+    reg reset_rosc_n;
 
     reg [3:0] addr;
     reg [3:0] next_addr;
 
-    assign reset = io_in[1] && io_in[2];
+    assign reset_n = !(reset_enable && io_in[2]);
 
     HovalaagWrapper wrapper (
         .clk(clk),
-        .reset(reset),
-        .reset_rosc(reset_rosc),
+        .reset_n(reset_n),
+        .reset_rosc_n(reset_rosc_n),
         .addr(addr),
         .io_in(io_in[7:2]),
         .io_out(io_out[7:0])
     );
 
     always @(posedge clk) begin
-        if (io_in[1] && io_in[2]) begin
-            reset_rosc <= 1'b1;
-        end 
-        else if (io_in[1] && io_in[4]) begin
-            reset_rosc <= 1'b0;
+        if (reset_enable && io_in[4]) begin
+            reset_rosc_n <= 1'b1;
         end
+        else if (reset_enable) begin
+            reset_rosc_n <= 1'b0;
+        end 
 
-        if (io_in[1] && (io_in[2] || io_in[3])) begin
+        if (reset_enable && (io_in[2] || io_in[3])) begin
             next_addr <= 4'h0;
         end
         else begin
@@ -62,8 +63,17 @@ module MichaelBell_hovalaag (
         end
     end
 
+`ifdef SIM
     always @(negedge clk) begin
         addr <= next_addr;
     end
+`else
+    genvar i;
+    generate
+        for (i = 0; i <= 3; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(addr[i]), .D(next_addr[i]), .CLK_N(clk), .RESET_B(1'b1));
+        end
+    endgenerate
+`endif
 
 endmodule

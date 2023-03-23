@@ -20,8 +20,8 @@
 
 module HovalaagWrapper(
     input clk,     // Clock for the wrapper
-    input reset,
-    input reset_rosc,
+    input reset_n,
+    input reset_rosc_n,
 
     input [3:0] addr, // Input:  0-4: Set instr bits 0-5, 6-11, 12-17, 18-23, 24-29
                       //           5: Instr bits 30-31 and execute
@@ -68,7 +68,7 @@ module HovalaagWrapper(
         .OUT(out),
         .instr({io_in[1:0], instr[29:0]}),
         .PC_out(pc),
-        .rst(reset),
+        .rst(!reset_n),
         .alu_op_14_source({{(12-RNG_WIDTH){1'b0}}, buffered_fast_count}),
         .alu_op_15_source(12'h001),
 
@@ -83,12 +83,23 @@ module HovalaagWrapper(
         .seg_out(seg7_out)
     );
 
-    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(11)) rosc (
-        .reset(reset_rosc),
+    RingOscillator #(.COUNT_WIDTH(RNG_WIDTH), .STAGES(17)) rosc (
+        .reset_n(reset_rosc_n),
         .fast_count(fast_count)
     );
 
-    always @(negedge clk) buffered_fast_count <= fast_count;
+`ifdef SIM
+    always @(negedge clk) begin
+        buffered_fast_count <= fast_count;
+    end
+`else
+    genvar i;
+    generate
+        for (i = 0; i < RNG_WIDTH; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(fast_count[i]), .CLK_N(clk), .RESET_B(reset_n));
+        end
+    endgenerate
+`endif
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
@@ -96,7 +107,7 @@ module HovalaagWrapper(
     assign out_select = instr[13];
 
     always @(posedge clk) begin
-        if (reset) begin
+        if (!reset_n) begin
             instr <= 0;
             in1 <= 0;
             in2 <= 0;

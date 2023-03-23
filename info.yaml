@@ -47,10 +47,10 @@ documentation:
 # A description of what the inputs do
   inputs:               
     - Clock
-    - Reset enable
-    - Input 0 or Reset
-    - Input 1 or Reset subcycle count
-    - Input 2
+    - Reset disable (resets enabled when low)
+    - Input 0 or Reset (when high)
+    - Input 1 or Reset subcycle count (when high)
+    - Input 2 or enable ROSC (when high and reset enabled)
     - Input 3
     - Input 4
     - Input 5
