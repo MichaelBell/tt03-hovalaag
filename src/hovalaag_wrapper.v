@@ -100,7 +100,7 @@ module HovalaagWrapper(
     genvar i;
     generate
         for (i = 0; i < 6; i = i + 1) begin
-            sky130_fd_sc_hd__dfrtn_1 fastcntff(.Q(buffered_fast_count[i]), .D(fast_count[i] && rosc_pause), .CLK_N(clk), .RESET_B(reset_n));
+            sky130_fd_sc_hd__dlrtn_1 fastcntlatch(.Q(buffered_fast_count[i]), .D(fast_count[i] && rosc_pause), .GATE_N(clk), .RESET_B(reset_n));
         end
     endgenerate
 `endif

@@ -70,7 +70,7 @@ module MichaelBell_hovalaag (
     genvar i;
     generate
         for (i = 0; i <= 2; i = i + 1) begin
-            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(addr[i]), .D(next_addr[i]), .CLK_N(clk), .RESET_B(1'b1));
+            sky130_fd_sc_hd__dlxtn_1 addrlatch(.Q(addr[i]), .D(next_addr[i]), .GATE_N(clk));
         end
     endgenerate
 `endif
