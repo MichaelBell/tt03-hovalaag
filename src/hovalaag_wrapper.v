@@ -92,9 +92,18 @@ module HovalaagWrapper(
         end
     end
 
+`ifdef SIM
     always @(negedge clk) begin
         buffered_fast_count[5:0] <= fast_count & {6{rosc_pause}};
     end
+`else
+    genvar i;
+    generate
+        for (i = 0; i < 6; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 fastcntff(.Q(buffered_fast_count[i]), .D(fast_count[i] && rosc_pause), .CLK_N(clk), .RESET_B(reset_n));
+        end
+    endgenerate
+`endif
 
     // We want to use out valid and select before the result is clocked out,
     // so decode them directly here
@@ -106,8 +115,8 @@ module HovalaagWrapper(
             instr[5:0] <= 0;
             instr[17:12] <= 0;
             instr[29:24] <= 0;
-            in1 <= 0;
-            in2 <= 0;
+            in1[5:0] <= 0;
+            in2[5:0] <= 0;
         end
         else begin
             case (addr)
@@ -120,6 +129,7 @@ module HovalaagWrapper(
         end
     end
 
+`ifdef SIM
     always @(negedge clk) begin
         if (!reset_n) begin
             instr[11:6] <= 0;
@@ -138,6 +148,17 @@ module HovalaagWrapper(
             endcase
         end
     end
+`else
+    generate
+        for (i = 0; i < 6; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 instr1ff(.Q(instr[i+6]), .D((addr == 0) ? io_in[i] : instr[i+6]), .CLK_N(clk), .RESET_B(reset_n));
+            sky130_fd_sc_hd__dfrtn_1 instr2ff(.Q(instr[i+18]), .D((addr == 1) ? io_in[i] : instr[i+18]), .CLK_N(clk), .RESET_B(reset_n));
+            if (i < 2) sky130_fd_sc_hd__dfrtn_1 instr3ff(.Q(instr[i+30]), .D((addr == 2) ? io_in[i] : instr[i+30]), .CLK_N(clk), .RESET_B(reset_n));
+            sky130_fd_sc_hd__dfrtn_1 in1ff(.Q(in1[i+6]), .D((addr == 3) ? io_in[i] : in1[i+6]), .CLK_N(clk), .RESET_B(reset_n));
+            sky130_fd_sc_hd__dfrtn_1 in2ff(.Q(in2[i+6]), .D((addr == 4) ? io_in[i] : in2[i+6]), .CLK_N(clk), .RESET_B(reset_n));
+        end
+    endgenerate
+`endif
 
     function [7:0] get_out(input [2:0] addr);
         case (addr)

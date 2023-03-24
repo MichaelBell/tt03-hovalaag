@@ -62,8 +62,17 @@ module MichaelBell_hovalaag (
         end
     end
 
+`ifdef SIM
     always @(negedge clk) begin
         addr <= next_addr;
     end
+`else
+    genvar i;
+    generate
+        for (i = 0; i <= 2; i = i + 1) begin
+            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(addr[i]), .D(next_addr[i]), .CLK_N(clk), .RESET_B(1'b1));
+        end
+    endgenerate
+`endif
 
 endmodule
