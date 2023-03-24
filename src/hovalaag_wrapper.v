@@ -47,7 +47,8 @@ module HovalaagWrapper(
     wire [7:0] pc;
 
     wire [2:0] fast_count;
-    reg [11:0] buffered_fast_count;
+    reg [2:0] buffered_fast_count;
+    reg [11:0] rng_bits;
 
     wire [11:0] a_dbg;
     wire [11:0] b_dbg;
@@ -67,7 +68,7 @@ module HovalaagWrapper(
         .instr({io_in[1:0], instr[29:0]}),
         .PC_out(pc),
         .rst(!reset_n),
-        .alu_op_14_source(buffered_fast_count),
+        .alu_op_14_source(rng_bits),
         .alu_op_15_source(12'h001),
 
         .A_dbg(a_dbg),
@@ -81,24 +82,36 @@ module HovalaagWrapper(
         .seg_out(seg7_out)
     );
 
-    RingOscillator #(.COUNT_WIDTH(3), .STAGES(11)) rosc (
+    reg rosc_pause;
+
+    RingOscillator #(.NUM_FAST_CLKS(3), .STAGES(11)) rosc (
         .reset_n(reset_rosc_n),
-        .fast_count(fast_count)
+        .pause(rosc_pause),
+        .fast_clk(fast_count)
     );
+
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            rosc_pause <= 1'b0;
+            rng_bits <= 0;
+        end else begin
+            if (rosc_pause) begin
+                rng_bits[11:3] <= rng_bits[8:0];
+                rng_bits[2:0] <= buffered_fast_count[2:0];
+            end
+            rosc_pause <= ~rosc_pause;
+        end
+    end    
 
 `ifdef SIM
     always @(negedge clk) begin
-        buffered_fast_count[11:3] <= buffered_fast_count[8:0];
-        buffered_fast_count[2:0] <= fast_count;
+        buffered_fast_count[2:0] <= fast_count & {3{rosc_pause}};
     end
 `else
     genvar i;
     generate
         for (i = 0; i < 3; i = i + 1) begin
-            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(fast_count[i]), .CLK_N(clk), .RESET_B(reset_n));
-        end
-        for (i = 3; i < 12; i = i + 1) begin
-            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(buffered_fast_count[i-3]), .CLK_N(clk), .RESET_B(reset_n));
+            sky130_fd_sc_hd__dfrtn_1 addrff(.Q(buffered_fast_count[i]), .D(fast_count[i] && rosc_pause), .CLK_N(clk), .RESET_B(reset_n));
         end
     endgenerate
 `endif

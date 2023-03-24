@@ -21,7 +21,7 @@ module inv_with_delay(
     wire pwrgood_pp0_out_Y;
 
     //                                 Name         Output             Other arguments
-    not #20                            not0        (not0_out_Y       , A                     );
+    not #7                             not0        (not0_out_Y       , A                     );
     sky130_fd_sc_hd__udp_pwrgood_pp$PG pwrgood_pp0 (pwrgood_pp0_out_Y, not0_out_Y, VPWR, VGND);
     buf                                buf0        (Y                , pwrgood_pp0_out_Y     );
 

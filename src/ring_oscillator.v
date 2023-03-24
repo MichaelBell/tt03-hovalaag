@@ -16,10 +16,11 @@
 /* Simple ring oscillator generating a fast clock */
 
 module RingOscillator
-    #(parameter COUNT_WIDTH = 8, parameter STAGES=7)
+    #(parameter NUM_FAST_CLKS = 3, parameter STAGES=11)
 (
     input reset_n,
-    output [COUNT_WIDTH-1:0] fast_count
+    input pause,
+    output [NUM_FAST_CLKS-1:0] fast_clk
 );
     wire [STAGES-1:0] c;
 
@@ -41,7 +42,7 @@ module RingOscillator
     assign c[0] = reset_n ? ~c[STAGES-1] : 1'b0;
 `endif
 
-    reg [2:0] clk_div;
+    reg [NUM_FAST_CLKS:0] clk_div;
 
     always @(posedge c[STAGES-1] or negedge reset_n) begin
         if (!reset_n) begin
@@ -51,8 +52,16 @@ module RingOscillator
         end
     end
 
+    always @(posedge clk_div[0] or negedge reset_n) begin
+        if (!reset_n) begin
+            clk_div[1] <= 1'b0;
+        end else if (!pause) begin
+            clk_div[1] <= ~clk_div[1];
+        end
+    end
+
     generate
-    for (i = 1; i <= 2; i = i + 1) begin
+    for (i = 2; i <= NUM_FAST_CLKS; i = i + 1) begin
         always @(posedge clk_div[i-1] or negedge reset_n) begin
             if (!reset_n) begin
                 clk_div[i] <= 1'b0;
@@ -63,24 +72,6 @@ module RingOscillator
     end
     endgenerate
 
-    wire fast_clk;
-`ifdef SIM
-    assign fast_clk = clk_div[2];
-`else
-    sky130_fd_sc_hd__clkbuf_8 fastclkbuf(.X(fast_clk), .A(clk_div[2]));
-`endif
-
-    // Counter driven by divided output
-    reg [COUNT_WIDTH-1:0] counter;
-
-    always @(posedge fast_clk or negedge reset_n) begin
-        if (!reset_n) begin
-            counter <= 0;
-        end else begin
-            counter <= counter + 1;
-        end
-    end    
-
-    assign fast_count = counter;
+    assign fast_clk = clk_div[NUM_FAST_CLKS:1];
 
 endmodule
