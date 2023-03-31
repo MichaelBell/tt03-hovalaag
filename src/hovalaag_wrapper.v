@@ -90,7 +90,7 @@ module HovalaagWrapper(
         .fast_clk(fast_count)
     );
 
-    always @(posedge clk or negedge reset_n) begin
+    always @(posedge clk) begin
         if (!reset_n) begin
             rosc_pause <= 1'b0;
             rng_bits <= 0;
