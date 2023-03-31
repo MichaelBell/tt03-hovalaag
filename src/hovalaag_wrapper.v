@@ -157,8 +157,8 @@ module HovalaagWrapper(
             get_out[7:4] = 0;
         end
         6: get_out = pc;
-        7: get_out = out[ 7: 0];
-        8: get_out = { 4'b0000, out[11: 8] };
+        7: get_out = { out[ 5: 0], 2'b10 };
+        8: get_out = { out[11: 6], 2'b10 };
         9: get_out = { out[11], seg7_out };
         default: get_out = 8'bx;
         endcase

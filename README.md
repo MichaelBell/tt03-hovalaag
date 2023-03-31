@@ -25,9 +25,11 @@ The instruction and data therefore need to be passed in and out over several (cu
 | 4     | Instruction 29-24 | Register W for debug |
 | 5     | Instruction 31-30 | IO update indication |
 | 6     | New IN1 5-0       | New PC |
-| 7     | New IN1 11-6      | OUT 7-0 |
-| 8     | New IN2 5-0       | OUT 11-8 |
+| 7     | New IN1 11-6      | OUT 5-0, high, clock |
+| 8     | New IN2 5-0       | OUT 11-6, high, clock |
 | 9     | New IN2 11-6      | OUT 3-0 for 7 segment display |
+
+The OUT values written at stages 7 and 8 are formatted suitably for input directly into my FIFO module.
 
 The IO update indication bits on the 6th clock are as follows:
 | Bit | Meaning |
@@ -45,8 +47,6 @@ The implemented design also adds the following ALU ops in the unused range (orig
 ```
 
 ## TODO
-
-Look into the possibility of doing DDR to reduce the number of scan chain cycles per CPU cycle.
 
 Physical testing - would be good to try this on an FPGA or Verilog compiled for Pico and check interfacing with it works as expected.
 

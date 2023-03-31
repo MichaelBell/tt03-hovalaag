@@ -57,14 +57,14 @@ class HovaTest:
         self.dut.data_in.value = self.in1 & 0x3F
         await ClockCycles(self.dut.clk, 1)
         self.pc = self.dut.data_out.value
-        
+
         self.dut.data_in.value = (self.in1 >> 6) & 0x3F
         await ClockCycles(self.dut.clk, 1)
-        new_out = self.dut.data_out.value
+        new_out = self.dut.data_out.value >> 2
 
         self.dut.data_in.value = self.in2 & 0x3F
         await ClockCycles(self.dut.clk, 1)
-        new_out = new_out | ((self.dut.data_out.value & 0xF) << 8)
+        new_out = new_out | ((self.dut.data_out.value & 0xFC) << 4)
         new_out = (new_out ^ 0x800) - 0x800 # Sign extend
 
         self.dut.data_in.value = (self.in2 >> 6) & 0x3F
@@ -122,7 +122,7 @@ async def test_reset(dut):
         # OUT are all 0.
         for j in range(2):
             await ClockCycles(dut.clk, 1)
-            assert int(dut.data_out.value) == 0
+            assert int(dut.data_out.value) == 2
         await ClockCycles(dut.clk, 1)
         assert int(dut.data_out.value) == 0b00111111
 
@@ -370,11 +370,11 @@ class HovaRunProgram:
 
         self.dut.data_in.value = (in1 >> 6) & 0x3F
         await ClockCycles(self.dut.clk, 1)
-        new_out = self.dut.data_out.value
+        new_out = self.dut.data_out.value >> 2
 
         self.dut.data_in.value = in2 & 0x3F
         await ClockCycles(self.dut.clk, 1)
-        new_out = new_out | ((self.dut.data_out.value & 0xF) << 8)
+        new_out = new_out | ((self.dut.data_out.value & 0xFC) << 4)
         new_out = (new_out ^ 0x800) - 0x800 # Sign extend
 
         self.dut.data_in.value = (in2 >> 6) & 0x3F
