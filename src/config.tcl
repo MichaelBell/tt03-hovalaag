@@ -21,17 +21,12 @@ set ::env(PL_RESIZER_BUFFER_OUTPUT_PORTS) 0
 # allow use of specific sky130 cells
 set ::env(SYNTH_READ_BLACKBOX_LIB) 1
 
-# put all the pins on the left
-set ::env(FP_PIN_ORDER_CFG) $::env(DESIGN_DIR)/pin_order.cfg
-
 # reduce wasted space
 set ::env(TOP_MARGIN_MULT) 2
 set ::env(BOTTOM_MARGIN_MULT) 2
 
 # absolute die size
 set ::env(FP_SIZING) absolute
-set ::env(DIE_AREA) "0 0 150 170"
-set ::env(FP_CORE_UTIL) 55
 
 set ::env(PL_BASIC_PLACEMENT) {0}
 set ::env(GRT_ALLOW_CONGESTION) "1"
@@ -49,9 +44,9 @@ set ::env(DECAP_CELL) "\
 
 # clock
 set ::env(CLOCK_TREE_SYNTH) 1
-# period is in ns, so 20000ns == 50kHz
-set ::env(CLOCK_PERIOD) "20000"
-set ::env(CLOCK_PORT) {io_in[0]}
+# period is in ns, so 20ns == 50mHz
+set ::env(CLOCK_PERIOD) "20"
+set ::env(CLOCK_PORT) {clk}
 
 # hold/slack margin
 # set ::env(PL_RESIZER_HOLD_SLACK_MARGIN) 0.8 

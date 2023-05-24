@@ -11,10 +11,11 @@ project:
     - HovalaagCPU/Hovalaag.v
     - decoder.v
     - ring_oscillator.v
-  top_module:  "MichaelBell_hovalaag"      # put the name of your top module here, make it unique by prepending your github username
+  top_module:  "tt_um_MichaelBell_hovalaag"      # put the name of your top module here, make it unique by prepending your github username
+  tiles: "1x2"
 
 # Keep a track of the submission yaml
-yaml_version: 3.0
+yaml_version: 3.5
 
 # As everyone will have access to all designs, try to make it easy for someone new to your design to know what
 # it does and how to operate it. This info will be automatically collected and used to make a datasheet for the chip.
@@ -46,14 +47,14 @@ documentation:
 
 # A description of what the inputs do
   inputs:               
-    - Clock
-    - Reset disable (resets enabled when low)
-    - Input 0 or Reset (when high)
-    - Input 1 or Reset subcycle count (when high)
-    - Input 2 or enable ROSC (when high and reset enabled)
-    - Input 3
-    - Input 4
+    - Input 0
+    - Input 1
+    - Input 2 or Reset (when high)
+    - Input 3 or Reset subcycle count (when high)
+    - Input 4 or enable ROSC (when high and reset enabled)
     - Input 5
+    - Input 6
+    - Input 7
 # A description of what the outputs do
   outputs:
     - Output 0
@@ -64,6 +65,15 @@ documentation:
     - Output 5
     - Output 6
     - Output 7
+  biderectional:
+    - Input 8
+    - Input 9
+    - Input 10
+    - Input 11
+    - Output 8
+    - Output 9
+    - Output 10
+    - Output 11
 
 # The following fields are optional
   tag:          "microprocessor"      # comma separated list of tags: test encryption, experiment, clock, animation, utility, industrial, pwm, fpga, alu, microprocessor, risc, riscv, sensor, signal generator, fft, filter, music, bcd, sound, serial, timer, random number generator, calculator, decoder, counter, puzzle, multiplier, game, oscillator,

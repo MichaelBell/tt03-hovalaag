@@ -28,6 +28,7 @@ jobs:
       with:
         repository: tinytapeout/tt-support-tools
         path: tt
+        ref: tt03p5
 
     # need python
     - name: setup python

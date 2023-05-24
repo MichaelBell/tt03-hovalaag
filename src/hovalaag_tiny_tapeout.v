@@ -22,18 +22,29 @@
  *     3: RESET address only
  */
 
-module MichaelBell_hovalaag (
-  input [7:0] io_in,
-  output [7:0] io_out
+module tt_um_MichaelBell_hovalaag (
+  input  wire [7:0] ui_in,
+  output wire [7:0] uo_out,
+  input  wire [7:0] uio_in,  // IOs: Input path
+  output wire [7:0] uio_out, // IOs: Output path
+  output wire [7:0] uio_oe,  // IOs: Enable path (active high: 0=input, 1=output)
+  input  wire       ena,
+  input  wire       clk,
+  input  wire       rst_n
 );
-    wire clk = io_in[0];
 
-    wire reset_enable = !io_in[1];
+    wire reset_enable = !rst_n;
     wire reset_n;
     reg reset_rosc_n;
 
-    reg [3:0] addr;
-    reg [3:0] next_addr;
+    reg [2:0] addr;
+    reg [2:0] next_addr;
+
+    wire [11:0] io_in = {uio_in[3:0], ui_in[7:0]};
+    wire [11:0] io_out = {uio_out[7:4], uo_out[7:0]};
+
+    // Top4 IOs are outputs, bottom 4 are inputs
+    assign uio_oe = 8'b11110000;
 
     assign reset_n = !(reset_enable && io_in[2]);
 
@@ -44,8 +55,8 @@ module MichaelBell_hovalaag (
         .reset_n(reset_n),
         .reset_rosc_n(reset_rosc_n),
         .addr(addr),
-        .io_in(io_in[7:2]),
-        .io_out(out_from_wrapper)
+        .io_in(io_in),
+        .io_out(io_out)
     );
 
     always @(posedge clk) begin
@@ -60,7 +71,7 @@ module MichaelBell_hovalaag (
             next_addr <= 4'h0;
         end
         else begin
-            if (next_addr == 9) next_addr <= 0;
+            if (next_addr == 4) next_addr <= 0;
             else next_addr <= next_addr + 1;
         end
     end
@@ -72,14 +83,10 @@ module MichaelBell_hovalaag (
 `else
     genvar i;
     generate
-        for (i = 0; i <= 3; i = i + 1) begin
+        for (i = 0; i <= 2; i = i + 1) begin
             sky130_fd_sc_hd__dfrtn_1 addrff(.Q(addr[i]), .D(next_addr[i]), .CLK_N(clk), .RESET_B(1'b1));
         end
     endgenerate
 `endif
-
-    // Output data.  For addr 7 and 8 output clock so that the output can be used as input to MichaelBell_6bit_fifo
-    assign io_out[7:1] = out_from_wrapper[7:1];
-    assign io_out[0] = (addr == 7 || addr == 8) ? io_in[0] : out_from_wrapper[0];
 
 endmodule
