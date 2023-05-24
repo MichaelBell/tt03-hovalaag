@@ -41,7 +41,10 @@ module tt_um_MichaelBell_hovalaag (
     reg [2:0] next_addr;
 
     wire [11:0] io_in = {uio_in[3:0], ui_in[7:0]};
-    wire [11:0] io_out = {uio_out[7:4], uo_out[7:0]};
+    wire [11:0] io_out;
+
+    assign uo_out = io_out[7:0];
+    assign uio_out[7:4] = io_out[11:8];
 
     // Top4 IOs are outputs, bottom 4 are inputs
     assign uio_oe = 8'b11110000;

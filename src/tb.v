@@ -10,8 +10,8 @@ module tb (
     // testbench is controlled by test.py
     input clk,
     input rst,
-    input [5:0] data_in,
-    output [7:0] data_out
+    input [11:0] data_in,
+    output [11:0] data_out
    );
 
     // this part dumps the trace to a vcd file that can be viewed with GTKWave
@@ -22,19 +22,28 @@ module tb (
     end
 
     // wire up the inputs and outputs
-    wire [7:0] inputs = {data_in[5:0], !rst, clk};
-    wire [7:0] outputs;
-    assign data_out = outputs;
+    wire [11:0] inputs = data_in;
+    wire [7:0] outs;
+    wire [7:0] io_out;
+    wire [7:0] io_oe;
 
     // instantiate the DUT
-    MichaelBell_hovalaag uut(
+    tt_um_MichaelBell_hovalaag uut(
 `ifdef GL_TEST
         // for gatelevel testing we need to set up the power pins
         .vccd1(1'b1),
         .vssd1(1'b0),
 `endif
-        .io_in  (inputs),
-        .io_out (outputs)
+        .clk(clk),
+        .rst_n(!rst),
+        .ena(1'b1),
+        .ui_in  (inputs[7:0]),
+        .uo_out (outs),
+        .uio_in ({4'b0000, inputs[11:8]}),
+        .uio_out(io_out),
+        .uio_oe(io_oe)
         );
+
+    assign data_out = {io_out[7:4], outs[7:0]};
 
 endmodule

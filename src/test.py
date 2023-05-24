@@ -35,40 +35,32 @@ class HovaTest:
 
         self.dut._log.info("reset")
         self.dut.rst.value = 1
-        self.dut.data_in.value = 1
+        self.dut.data_in.value = 4
         await ClockCycles(self.dut.clk, 10)
         self.dut.rst.value = 0
         self.dut.data_in.value = 0
 
     async def execute_instr(self, instr):
-        for i in range(5):
-            self.dut.data_in.value = instr & 0x3F
+        for i in range(2):
+            self.dut.data_in.value = instr & 0xFFF
             await ClockCycles(self.dut.clk, 1)
             self.dbg[i] = self.dut.data_out.value
-            instr >>= 6
+            instr >>= 12
         
-        self.dut.data_in.value = instr & 0x3
+        self.dut.data_in.value = instr & 0xFF
         await ClockCycles(self.dut.clk, 1)
         if (self.dut.data_out.value & 0x1) != 0: self.in1 = 0
         if (self.dut.data_out.value & 0x2) != 0: self.in2 = 0
         out1_valid = (self.dut.data_out.value & 0x4) != 0
         out2_valid = (self.dut.data_out.value & 0x8) != 0
 
-        self.dut.data_in.value = self.in1 & 0x3F
+        self.dut.data_in.value = self.in1
         await ClockCycles(self.dut.clk, 1)
         self.pc = self.dut.data_out.value
 
-        self.dut.data_in.value = (self.in1 >> 6) & 0x3F
+        self.dut.data_in.value = self.in2
         await ClockCycles(self.dut.clk, 1)
-        new_out = self.dut.data_out.value >> 2
-
-        self.dut.data_in.value = self.in2 & 0x3F
-        await ClockCycles(self.dut.clk, 1)
-        new_out = new_out | ((self.dut.data_out.value & 0xFC) << 4)
-        new_out = (new_out ^ 0x800) - 0x800 # Sign extend
-
-        self.dut.data_in.value = (self.in2 >> 6) & 0x3F
-        await ClockCycles(self.dut.clk, 1)
+        new_out = self.dut.data_out.value
 
         if out1_valid:
             self.out1 = new_out
@@ -111,40 +103,37 @@ async def test_reset(dut):
         new_pc = i % 256
 
         # Debug values and execute status should all be 0
-        for j in range(6):
+        for j in range(3):
             await ClockCycles(dut.clk, 1)
             assert int(dut.data_out.value) == 0
 
-        # 7th cycle gives new PC
+        # 4th cycle gives new PC
         await ClockCycles(dut.clk, 1)
         assert int(dut.data_out.value) == new_pc
 
         # OUT are all 0.
-        for j in range(2):
-            await ClockCycles(dut.clk, 1)
-            assert int(dut.data_out.value) == 2
         await ClockCycles(dut.clk, 1)
-        assert int(dut.data_out.value) == 0b00111111
+        assert int(dut.data_out.value) == 0
 
     # Should be able to reset instruction read at any point
     dut._log.info("check addr reset")
     new_pc = 0
-    for i in range(1, 10):
+    for i in range(1, 5):
         await ClockCycles(dut.clk, i)
 
         # Remember if we got as far as incrementing PC.
-        if i >= 5: new_pc += 1
+        if i >= 2: new_pc += 1
 
         # Just reset the instruction address counter, not the whole thing
         dut.rst.value = 1
-        dut.data_in.value = 2
+        dut.data_in.value = 8
         await ClockCycles(dut.clk, 1)
         dut.rst.value = 0
         dut.data_in.value = 0
 
-        await ClockCycles(dut.clk, 7)
+        await ClockCycles(dut.clk, 4)
         assert int(dut.data_out.value) == new_pc
-        await ClockCycles(dut.clk, 3)
+        await ClockCycles(dut.clk, 1)
         new_pc += 1
 
 @cocotb.test()
@@ -192,7 +181,7 @@ async def test_alu(dut):
 
     # Enable ROSC
     dut.rst.value = 1
-    dut.data_in.value = 6
+    dut.data_in.value = 0x18
     await ClockCycles(dut.clk, 1)
     dut.rst.value = 0
     dut.data_in.value = 0
@@ -339,7 +328,7 @@ class HovaRunProgram:
 
         self.dut._log.info("reset")
         self.dut.rst.value = 1
-        self.dut.data_in.value = 1
+        self.dut.data_in.value = 4
         await ClockCycles(self.dut.clk, 2)
         self.dut.rst.value = 0
         self.dut.data_in.value = 0
