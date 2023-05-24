@@ -45,6 +45,7 @@ module tt_um_MichaelBell_hovalaag (
 
     // Top4 IOs are outputs, bottom 4 are inputs
     assign uio_oe = 8'b11110000;
+    assign uio_out[3:0] = 4'b0000;
 
     assign reset_n = !(reset_enable && io_in[2]);
 
