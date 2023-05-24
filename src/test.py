@@ -61,6 +61,7 @@ class HovaTest:
         self.dut.data_in.value = self.in2
         await ClockCycles(self.dut.clk, 1)
         new_out = self.dut.data_out.value
+        new_out = (new_out ^ 0x800) - 0x800 # Sign extend
 
         if out1_valid:
             self.out1 = new_out
@@ -338,13 +339,13 @@ class HovaRunProgram:
         await self.execute_instr(instr)
 
     async def execute_instr(self, instr):
-        for i in range(5):
-            self.dut.data_in.value = instr & 0x3F
+        for i in range(2):
+            self.dut.data_in.value = instr & 0xFFF
             await ClockCycles(self.dut.clk, 1)
             self.dbg[i] = self.dut.data_out.value
-            instr >>= 6
-
-        self.dut.data_in.value = instr & 0x3
+            instr >>= 12
+        
+        self.dut.data_in.value = instr & 0xFF
         await ClockCycles(self.dut.clk, 1)
         if (self.dut.data_out.value & 0x1) != 0: self.in1.pop(0)
         if (self.dut.data_out.value & 0x2) != 0: self.in2.pop(0)
@@ -353,21 +354,15 @@ class HovaRunProgram:
 
         in1 = 0 if len(self.in1) == 0 else self.in1[0]
         in2 = 0 if len(self.in2) == 0 else self.in2[0]
-        self.dut.data_in.value = in1 & 0x3F
+
+        self.dut.data_in.value = in1
         await ClockCycles(self.dut.clk, 1)
         self.pc = self.dut.data_out.value
 
-        self.dut.data_in.value = (in1 >> 6) & 0x3F
+        self.dut.data_in.value = in2
         await ClockCycles(self.dut.clk, 1)
-        new_out = self.dut.data_out.value >> 2
-
-        self.dut.data_in.value = in2 & 0x3F
-        await ClockCycles(self.dut.clk, 1)
-        new_out = new_out | ((self.dut.data_out.value & 0xFC) << 4)
+        new_out = self.dut.data_out.value & 0xFFF
         new_out = (new_out ^ 0x800) - 0x800 # Sign extend
-
-        self.dut.data_in.value = (in2 >> 6) & 0x3F
-        await ClockCycles(self.dut.clk, 1)
 
         if out1_valid:
             self.out1.append(new_out)

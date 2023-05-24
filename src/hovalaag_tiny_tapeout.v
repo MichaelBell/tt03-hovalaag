@@ -72,7 +72,7 @@ module tt_um_MichaelBell_hovalaag (
         end 
 
         if (reset_enable && (io_in[2] || io_in[3])) begin
-            next_addr <= 4'h0;
+            next_addr <= 0;
         end
         else begin
             if (next_addr == 4) next_addr <= 0;

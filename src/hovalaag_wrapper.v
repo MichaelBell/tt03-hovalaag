@@ -34,7 +34,7 @@ module HovalaagWrapper(
     input [11:0] io_in,
     output [11:0] io_out
 );
-    reg [29:0] instr;
+    reg [23:0] instr;
     reg [11:0] in1;
     reg [11:0] in2;
 
@@ -64,7 +64,7 @@ module HovalaagWrapper(
         .IN2(in2),
         .IN2_adv(in2_adv),
         .OUT(out),
-        .instr({io_in[1:0], instr[29:0]}),
+        .instr({io_in[7:0], instr[23:0]}),
         .PC_out(pc),
         .rst(!reset_n),
         .alu_op_14_source(rng_bits),
@@ -130,7 +130,6 @@ module HovalaagWrapper(
             case (addr)
             0: instr[11: 0] <= io_in;
             1: instr[23:12] <= io_in;
-            2: instr[31:24] <= io_in;
             3: in1 <= io_in;
             4: in2 <= io_in;
             endcase
@@ -139,14 +138,14 @@ module HovalaagWrapper(
 
     function [11:0] get_out(input [2:0] addr);
         case (addr)
-        0: get_out = a_dbg[7:0];
-        1: get_out = b_dbg[7:0];
+        0: get_out = a_dbg;
+        1: get_out = b_dbg;
         2: begin
             get_out[0] = in1_adv;
             get_out[1] = in2_adv;
             get_out[2] = out_valid && !out_select;
             get_out[3] = out_valid && out_select;
-            get_out[7:4] = 0;
+            get_out[11:4] = 0;
         end
         3: get_out = pc;
         4: get_out = out;
