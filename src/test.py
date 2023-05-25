@@ -30,6 +30,10 @@ class HovaTest:
 
     async def start_and_reset(self):
         self.dut._log.info("start")
+        self.dut.ena.value = 0
+        await Timer(1, units="us")
+        self.dut.ena.value = 1
+
         self.clock = Clock(self.dut.clk, 10, units="us")
         cocotb.start_soon(self.clock.start())
 
@@ -324,6 +328,10 @@ class HovaRunProgram:
 
     async def start_and_reset(self):
         self.dut._log.info("start")
+        self.dut.ena.value = 0
+        await Timer(1, units="us")
+        self.dut.ena.value = 1
+
         self.clock = Clock(self.dut.clk, 10, units="us")
         cocotb.start_soon(self.clock.start())
 

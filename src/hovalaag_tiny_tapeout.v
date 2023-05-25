@@ -56,8 +56,8 @@ module tt_um_MichaelBell_hovalaag (
 
     HovalaagWrapper wrapper (
         .clk(clk),
-        .reset_n(reset_n),
-        .reset_rosc_n(reset_rosc_n),
+        .reset_n(ena ? reset_n : 1'b0),
+        .reset_rosc_n(ena ? reset_rosc_n : 1'b0),
         .addr(addr),
         .io_in(io_in),
         .io_out(io_out)

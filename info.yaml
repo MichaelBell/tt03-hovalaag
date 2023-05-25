@@ -34,7 +34,7 @@ documentation:
       This is an implementation of the VLIW processor from the game.  Thank you to @[nothings](https://twitter.com/nothings) for the fun game,
       making the assembler public domain, and for permission to create this hardware implementation.
 
-      The processor uses 32-bit instructions and has 12-bit I/O.  The instruction and data are therefore passed in and out over 10 clocks per
+      The processor uses 32-bit instructions and has 12-bit I/O.  The instruction and data are therefore passed in and out over 5 clocks per
       processor clock.
 
       More details in the [github repo](https://github.com/MichaelBell/tt03-hovalaag).

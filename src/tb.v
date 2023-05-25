@@ -10,6 +10,7 @@ module tb (
     // testbench is controlled by test.py
     input clk,
     input rst,
+    input ena,
     input [11:0] data_in,
     output [11:0] data_out
    );
@@ -36,7 +37,7 @@ module tb (
 `endif
         .clk(clk),
         .rst_n(!rst),
-        .ena(1'b1),
+        .ena(ena),
         .ui_in  (inputs[7:0]),
         .uo_out (outs),
         .uio_in ({4'b0000, inputs[11:8]}),
